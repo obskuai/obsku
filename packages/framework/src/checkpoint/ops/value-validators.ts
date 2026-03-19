@@ -60,15 +60,15 @@ export const coerceNumeric = (
     return null;
   }
 
-  const n = typeof value === "number" ? value : Number(value);
-  if (Number.isNaN(n)) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  if (Number.isNaN(numericValue)) {
     if (strict) {
       throw new Error(`${fieldLabel} "${field}" is not numeric`);
     }
     return null;
   }
 
-  return n;
+  return numericValue;
 };
 const isRelationship = (value: unknown): value is Entity["relationships"][number] =>
   isRecord(value) && typeof value.targetId === "string" && typeof value.type === "string";
