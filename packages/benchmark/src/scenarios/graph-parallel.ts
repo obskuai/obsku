@@ -293,37 +293,27 @@ export const graphParallelScenario: Scenario<BenchmarkContext> = {
           nodes: [
             node("split", async (input) =>
               splitAgent.run(String(input), provider, {
-                checkpointStore,
                 onEvent: emitEvent,
-                sessionId: ctx.frameworkSessionId,
               })
             ),
             node("worker-a", async (input) =>
               workerAAgent.run(String(input), provider, {
-                checkpointStore,
                 onEvent: emitEvent,
-                sessionId: ctx.frameworkSessionId,
               })
             ),
             node("worker-b", async (input) =>
               workerBAgent.run(String(input), provider, {
-                checkpointStore,
                 onEvent: emitEvent,
-                sessionId: ctx.frameworkSessionId,
               })
             ),
             node("worker-c", async (input) =>
               workerCAgent.run(String(input), provider, {
-                checkpointStore,
                 onEvent: emitEvent,
-                sessionId: ctx.frameworkSessionId,
               })
             ),
             node("merge", async (input) =>
               mergeAgent.run(String(input), provider, {
-                checkpointStore,
                 onEvent: emitEvent,
-                sessionId: ctx.frameworkSessionId,
               })
             ),
           ],

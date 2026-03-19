@@ -1,6 +1,6 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { spawn } from "node:child_process";
-import { DEFAULTS, DEFAULT_BLOCKLIST_PATTERNS, type EnvFilterOptions, filterEnvVars, matchesPattern } from "@obsku/framework";
+import { DEFAULTS, type EnvFilterOptions, filterEnvVars } from "@obsku/framework";
 import type { SessionLanguage } from "./session-payload";
 
 const PROCESS_KILL_GRACE_MS = DEFAULTS.processKillGraceTimeout;
@@ -50,7 +50,8 @@ export function killProcessTree(
     } catch (error: unknown) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "ESRCH") {
-        if (process.env.OBSKU_DEBUG) process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+        if (process.env.OBSKU_DEBUG)
+          process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
       }
     }
   }
@@ -60,7 +61,8 @@ export function killProcessTree(
   } catch (error: unknown) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code !== "ESRCH") {
-      if (process.env.OBSKU_DEBUG) process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+      if (process.env.OBSKU_DEBUG)
+        process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
     }
   }
 }

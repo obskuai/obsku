@@ -2,15 +2,22 @@
 // Tests toAiSdkMessages, toAiSdkTools, fromAiSdkResponse
 
 import { describe, expect, test } from "bun:test";
-import {
-  BlockType,
-  type ContentBlock,
-  type LLMResponse,
-  type Message,
-  type ToolDef,
-} from "@obsku/framework";
+import { BlockType, type Message, type ToolDef } from "@obsku/framework";
 import type { GenerateTextResult, LanguageModelUsage, ToolSet } from "ai";
 import { fromAiSdkResponse, toAiSdkMessages, toAiSdkTools } from "../src/converter";
+
+function usage(partial?: Partial<LanguageModelUsage>): LanguageModelUsage {
+  return {
+    completionTokens: partial?.completionTokens ?? 0,
+    promptTokens: partial?.promptTokens ?? 0,
+    totalTokens:
+      partial?.totalTokens ?? (partial?.promptTokens ?? 0) + (partial?.completionTokens ?? 0),
+  };
+}
+
+function asContentArray(value: unknown): Array<Record<string, unknown>> {
+  return value as Array<Record<string, unknown>>;
+}
 
 // ---------------------------------------------------------------------------
 // toAiSdkMessages - System message extraction
@@ -156,7 +163,7 @@ describe("toAiSdkMessages", () => {
       ];
       const result = toAiSdkMessages(messages);
       expect(result.messages).toHaveLength(1);
-      const content = result.messages[0].content as Array<{ type: string }>;
+      const content = asContentArray(result.messages[0].content);
       expect(Array.isArray(content)).toBe(true);
       expect(content[0]).toEqual({
         type: "tool-call",
@@ -182,7 +189,7 @@ describe("toAiSdkMessages", () => {
         },
       ];
       const result = toAiSdkMessages(messages);
-      const content = result.messages[0].content as Array<{ type: string }>;
+      const content = asContentArray(result.messages[0].content);
       expect(content).toHaveLength(2);
       expect(content[0]).toEqual({ type: "text", text: "Let me help" });
       expect(content[1]).toEqual({
@@ -271,7 +278,7 @@ describe("toAiSdkMessages", () => {
       const result = toAiSdkMessages(messages);
       expect(result.messages).toHaveLength(1);
       expect(result.messages[0].role).toBe("tool");
-      const content = result.messages[0].content as Array<{ type: string }>;
+      const content = asContentArray(result.messages[0].content);
       expect(content[0]).toEqual({
         type: "tool-result",
         toolCallId: "call-123",
@@ -425,7 +432,9 @@ describe("toAiSdkTools", () => {
       },
     ];
     const result = toAiSdkTools(tools);
-    expect(result.complex.parameters).toEqual(tools[0].inputSchema);
+    expect(result.complex.parameters).toEqual(
+      tools[0].inputSchema as typeof result.complex.parameters
+    );
   });
 
   test("preserves description", () => {
@@ -473,13 +482,22 @@ describe("fromAiSdkResponse", () => {
       text: partial.text ?? "",
       toolCalls: partial.toolCalls ?? [],
       finishReason: partial.finishReason as GenerateTextResult<ToolSet, unknown>["finishReason"],
-      usage: partial.usage ?? { promptTokens: 0, completionTokens: 0 },
+      usage: partial.usage ?? usage(),
       // Required properties we don't use
+      experimental_output: undefined,
+      files: [],
+      providerMetadata: undefined,
+      reasoning: undefined,
+      reasoningDetails: [],
+      sources: [],
       warnings: undefined,
       steps: [],
       response: {} as GenerateTextResult<ToolSet, unknown>["response"],
       request: {} as GenerateTextResult<ToolSet, unknown>["request"],
-    } as GenerateTextResult<ToolSet, unknown>;
+      staticToolCalls: [],
+      toolResults: [],
+      finishMessage: undefined,
+    } as unknown as GenerateTextResult<ToolSet, unknown>;
   }
 
   describe("text response", () => {
@@ -557,7 +575,7 @@ describe("fromAiSdkResponse", () => {
   describe("usage mapping", () => {
     test("maps promptTokens to inputTokens", () => {
       const result = createMockResult({
-        usage: { promptTokens: 100, completionTokens: 50 },
+        usage: usage({ completionTokens: 50, promptTokens: 100 }),
       });
       const response = fromAiSdkResponse(result);
       expect(response.usage.inputTokens).toBe(100);
@@ -565,7 +583,7 @@ describe("fromAiSdkResponse", () => {
 
     test("maps completionTokens to outputTokens", () => {
       const result = createMockResult({
-        usage: { promptTokens: 100, completionTokens: 50 },
+        usage: usage({ completionTokens: 50, promptTokens: 100 }),
       });
       const response = fromAiSdkResponse(result);
       expect(response.usage.outputTokens).toBe(50);
@@ -580,7 +598,7 @@ describe("fromAiSdkResponse", () => {
 
     test("handles partial usage", () => {
       const result = createMockResult({
-        usage: { promptTokens: 50 } as LanguageModelUsage,
+        usage: usage({ promptTokens: 50 }),
       });
       const response = fromAiSdkResponse(result);
       expect(response.usage.inputTokens).toBe(50);

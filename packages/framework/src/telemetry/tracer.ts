@@ -1,6 +1,5 @@
 import { getErrorMessage, getErrorStack } from "../error-utils";
 import { debugLog } from "./log";
-import { debugLog } from "./log";
 import type { GenAiAttributes, TelemetryConfig } from "./types";
 
 interface OtelSpan {
@@ -67,9 +66,7 @@ async function loadOtelApi(): Promise<OtelApi | null> {
     }
     return _otelApi;
   } catch (error: unknown) {
-    debugLog(
-      `OTel API not available: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`
-    );
+    debugLog(`OTel API not available: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`);
     return null;
   }
 }

@@ -11,7 +11,7 @@ import {
   resumeGraph,
   run,
 } from "@obsku/framework";
-import { type BenchmarkContext, type EventSubscribable, providerInstability } from "../runner";
+import { type BenchmarkContext, type EventSubscribable } from "../runner";
 import { ratio } from "../scoring/scorer";
 import { assertMetric, MetricEvaluation } from "../scoring/shared";
 import type { Scenario, ScoringCriteria } from "../types";
@@ -22,11 +22,25 @@ const REMEMBER_INPUT =
 const RECALL_INPUT = "What is my favorite color? Answer briefly.";
 
 const SCORING_CRITERIA: ScoringCriteria[] = [
-  { name: "checkpoint_events", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 1 / 3 },
-  { name: "interruption_resumption", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 1 / 3 },
-  { name: "session_persistence", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 1 / 3 },
+  {
+    name: "checkpoint_events",
+    scorerVersion: "1.0.0",
+    tolerance: { min: 1, max: 1 },
+    weight: 1 / 3,
+  },
+  {
+    name: "interruption_resumption",
+    scorerVersion: "1.0.0",
+    tolerance: { min: 1, max: 1 },
+    weight: 1 / 3,
+  },
+  {
+    name: "session_persistence",
+    scorerVersion: "1.0.0",
+    tolerance: { min: 1, max: 1 },
+    weight: 1 / 3,
+  },
 ];
-
 
 type ExecutionSummary = {
   savedCheckpoints: Checkpoint[];
@@ -48,8 +62,6 @@ type ExecutionSummary = {
 function node(id: string, executor: GraphNode["executor"]): GraphNode {
   return { executor, id };
 }
-
-
 
 function createEventSubscribable(): EventSubscribable & {
   close(): void;

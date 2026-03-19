@@ -32,9 +32,6 @@ function normalizeMetric(metric: unknown): MetricResult | null {
 }
 
 function normalizeMetrics(value: unknown): MetricResult[] {
-}
-
-function normalizeMetrics(value: unknown): MetricResult[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((metric) => normalizeMetric(metric))

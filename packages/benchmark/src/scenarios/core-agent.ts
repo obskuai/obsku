@@ -9,9 +9,9 @@ import {
   type ToolResultEvent,
 } from "@obsku/framework";
 import { Effect } from "effect";
-import { type BenchmarkContext, providerInstability } from "../runner";
+import type { BenchmarkContext } from "../runner";
 import { ratio } from "../scoring/scorer";
-import { assertMetric, MetricEvaluation, isCanonicalEvent } from "../scoring/shared";
+import { assertMetric, isCanonicalEvent, MetricEvaluation } from "../scoring/shared";
 import type { Scenario, ScoringCriteria } from "../types";
 
 const INPUT =
@@ -23,8 +23,6 @@ const SCORING_CRITERIA: ScoringCriteria[] = [
   { name: "usage_tracking", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
   { name: "output_content", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
 ];
-
-
 
 function getEventIndex(
   events: CanonicalAgentEvent[],
@@ -39,8 +37,6 @@ function getEventIndex(
 
   return -1;
 }
-
-
 
 function evaluateTurnLifecycle(events: CanonicalAgentEvent[]): MetricEvaluation {
   const turnStarts = events.filter(

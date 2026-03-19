@@ -3,9 +3,13 @@
 
 import { describe, expect, test } from "bun:test";
 import type { LLMStreamEvent } from "@obsku/framework";
-import type { FinishReason, TextStreamPart, ToolSet } from "ai";
+import type { TextStreamPart, ToolSet } from "ai";
 import { AiSdkError } from "../src/errors";
 import { mapStreamEvents } from "../src/stream-mapper";
+
+function asStreamPart(event: unknown): TextStreamPart<ToolSet> {
+  return event as TextStreamPart<ToolSet>;
+}
 
 // Helper to create a mock async iterable
 async function* mockStream(
@@ -229,9 +233,7 @@ describe("mapStreamEvents", () => {
     });
 
     test("handles undefined finishReason", async () => {
-      const inputStream = mockStream([
-        { type: "finish", finishReason: undefined } as TextStreamPart<ToolSet>,
-      ]);
+      const inputStream = mockStream([asStreamPart({ type: "finish", finishReason: undefined })]);
       const events = await collectEvents(mapStreamEvents(inputStream));
       expect(events[0]).toEqual({
         type: "message_end",
@@ -293,7 +295,7 @@ describe("mapStreamEvents", () => {
       ]);
       try {
         await collectEvents(mapStreamEvents(inputStream));
-        expect.fail("Should have thrown");
+        throw new Error("Should have thrown");
       } catch (err) {
         expect(err).toBeInstanceOf(AiSdkError);
         expect((err as Error).message).toBe("Custom error message");
@@ -307,7 +309,7 @@ describe("mapStreamEvents", () => {
       ]);
       try {
         await collectEvents(mapStreamEvents(inputStream));
-        expect.fail("Should have thrown");
+        throw new Error("Should have thrown");
       } catch (err) {
         expect(err).toBeInstanceOf(AiSdkError);
         expect((err as AiSdkError).code).toBe("throttle");
@@ -321,7 +323,7 @@ describe("mapStreamEvents", () => {
       ]);
       try {
         await collectEvents(mapStreamEvents(inputStream));
-        expect.fail("Should have thrown");
+        throw new Error("Should have thrown");
       } catch (err) {
         expect(err).toBeInstanceOf(AiSdkError);
         expect((err as AiSdkError).code).toBe("auth");
@@ -372,7 +374,7 @@ describe("mapStreamEvents", () => {
 
     test("ignores file events", async () => {
       const inputStream = mockStream([
-        { type: "file", data: "file data" } as TextStreamPart<ToolSet>,
+        asStreamPart({ type: "file", data: "file data" }),
         { type: "text-delta", textDelta: "Hello" } as TextStreamPart<ToolSet>,
       ]);
       const events = await collectEvents(mapStreamEvents(inputStream));
@@ -403,7 +405,7 @@ describe("mapStreamEvents", () => {
 
     test("ignores tool-result events", async () => {
       const inputStream = mockStream([
-        { type: "tool-result", toolCallId: "id", result: "result" } as TextStreamPart<ToolSet>,
+        asStreamPart({ type: "tool-result", toolCallId: "id", result: "result" }),
         { type: "text-delta", textDelta: "Hello" } as TextStreamPart<ToolSet>,
       ]);
       const events = await collectEvents(mapStreamEvents(inputStream));
@@ -430,7 +432,7 @@ describe("mapStreamEvents", () => {
 
     test("ignores unknown event types", async () => {
       const inputStream = mockStream([
-        { type: "unknown-event" } as TextStreamPart<ToolSet>,
+        asStreamPart({ type: "unknown-event" }),
         { type: "text-delta", textDelta: "Hello" } as TextStreamPart<ToolSet>,
       ]);
       const events = await collectEvents(mapStreamEvents(inputStream));

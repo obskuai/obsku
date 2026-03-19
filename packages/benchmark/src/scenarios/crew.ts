@@ -111,31 +111,13 @@ function getEventIndex(
   return -1;
 }
 
-function getNodeInput(events: CanonicalAgentEvent[], nodeId: string): string {
-  const nodeStartIndex = getEventIndex(
-    events,
-    (event) => event.type === "graph.node.start" && event.nodeId === nodeId
-  );
-
-  if (nodeStartIndex < 0) {
+function getNodeOutput(result: Awaited<ReturnType<typeof run>>, nodeId: string): string {
+  if (result.status !== "Complete") {
     return "";
   }
 
-  const nextNodeStartIndex = getEventIndex(
-    events,
-    (event) => event.type === "graph.node.start",
-    nodeStartIndex + 1
-  );
-  const endIndex = nextNodeStartIndex < 0 ? events.length : nextNodeStartIndex;
-
-  for (let index = nodeStartIndex + 1; index < endIndex; index += 1) {
-    const event = events[index]!;
-    if (event.type === "session.start" && typeof event.input === "string") {
-      return event.input;
-    }
-  }
-
-  return "";
+  const nodeResult = result.results[nodeId];
+  return nodeResult?.status === "Complete" ? String(nodeResult.output) : "";
 }
 
 function getReporterOutput(result: Awaited<ReturnType<typeof run>>): string {
@@ -173,15 +155,15 @@ function evaluateSequentialExecution(events: CanonicalAgentEvent[]): MetricEvalu
 }
 
 function evaluateTaskChaining(
-  events: CanonicalAgentEvent[],
+  analystOutput: string,
+  reporterOutput: string,
   finalOutput: string
 ): MetricEvaluation {
-  const analystInput = getNodeInput(events, "analyst");
-  const reporterInput = getNodeInput(events, "reporter");
   const analystReceivedResearch =
-    analystInput.includes("Project Alpha") &&
-    (analystInput.includes("2020") || analystInput.includes("$1M"));
-  const reporterReceivedAnalysis = reporterInput.includes("8.5") || /\bhigh\b/i.test(reporterInput);
+    analystOutput.includes("Project Alpha") &&
+    (analystOutput.includes("2020") || analystOutput.includes("$1M"));
+  const reporterReceivedAnalysis =
+    reporterOutput.includes("8.5") || /\bhigh\b/i.test(reporterOutput);
   const finalCarriesForwardFacts =
     finalOutput.includes("Project Alpha") &&
     (finalOutput.includes("2020") || finalOutput.includes("$1M"));
@@ -192,8 +174,8 @@ function evaluateTaskChaining(
         ? "provider"
         : "framework",
     note:
-      `analystInput=${JSON.stringify(analystInput)}, ` +
-      `reporterInput=${JSON.stringify(reporterInput)}, ` +
+      `analystOutput=${JSON.stringify(analystOutput)}, ` +
+      `reporterOutput=${JSON.stringify(reporterOutput)}, ` +
       `finalOutput=${JSON.stringify(finalOutput)}`,
     score: ratio([analystReceivedResearch, reporterReceivedAnalysis, finalCarriesForwardFacts]),
   };
@@ -279,10 +261,12 @@ export const crewScenario: Scenario<BenchmarkContext> = {
         throw new Error(`crew status mismatch: ${result.status}`);
       }
 
+      const analystOutput = getNodeOutput(result, "analyst");
+      const reporterOutput = getNodeOutput(result, "reporter");
       const finalOutput = getReporterOutput(result);
       const evaluations = [
         evaluateSequentialExecution(events),
-        evaluateTaskChaining(events, finalOutput),
+        evaluateTaskChaining(analystOutput, reporterOutput, finalOutput),
         evaluateOutputContent(finalOutput),
       ];
 

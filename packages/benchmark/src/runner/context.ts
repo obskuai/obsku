@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { SqliteCheckpointStore } from "@obsku/checkpoint-sqlite";
-import type { CanonicalAgentEvent, CheckpointStore, LLMProvider } from "@obsku/framework";
+import type { CanonicalAgentEvent, CheckpointBackend, LLMProvider } from "@obsku/framework";
 import { bedrock } from "@obsku/provider-bedrock";
 import { appendEventJsonl } from "../artifacts/writers";
 import type { RunSpec } from "../types";
@@ -36,7 +36,7 @@ export function providerInstability(
 
 export interface BenchmarkIsolation {
   checkpointDbPath: string;
-  checkpointStore: CheckpointStore;
+  checkpointStore: CheckpointBackend;
   frameworkSessionId: string;
   scenarioDir: string;
   workspaceDir: string;
@@ -51,7 +51,7 @@ export interface EventSubscribable {
 
 export interface BenchmarkContext {
   checkpointDbPath: string;
-  checkpointStore: CheckpointStore;
+  checkpointStore: CheckpointBackend;
   collectAgentEvents<TResult>(
     subject: EventSubscribable,
     execute: (sessionId: string) => Promise<TResult>
@@ -144,7 +144,9 @@ export async function createScenarioIsolation(
 export async function cleanupScenarioIsolation(isolation: BenchmarkIsolation): Promise<void> {
   try {
     await isolation.checkpointStore.close();
-  } catch (e) { console.warn("[benchmark] checkpoint store close failed:", e); }
+  } catch (e) {
+    console.warn("[benchmark] checkpoint store close failed:", e);
+  }
 
   await Promise.allSettled([
     rm(isolation.checkpointDbPath, { force: true }),

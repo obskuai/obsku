@@ -1,11 +1,6 @@
-import {
-  type AgentEvent,
-  agent,
-  type CanonicalAgentEvent,
-  type LLMProvider,
-} from "@obsku/framework";
+import { agent, type CanonicalAgentEvent, type LLMProvider } from "@obsku/framework";
 import { buildUsage } from "../artifacts/writers";
-import { type BenchmarkContext, providerInstability } from "../runner";
+import type { BenchmarkContext } from "../runner";
 import { ratio } from "../scoring/scorer";
 import { assertMetric, isCanonicalEvent, MetricEvaluation } from "../scoring/shared";
 import type { Scenario, ScoringCriteria } from "../types";
@@ -18,9 +13,19 @@ const OUTPUT_TOKEN_BUDGET = 2_048;
 const SOFT_SCENARIO_BUDGET_USD = 0.5;
 
 const SCORING_CRITERIA: ScoringCriteria[] = [
-  { name: "compaction_event_presence", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
+  {
+    name: "compaction_event_presence",
+    scorerVersion: "1.0.0",
+    tolerance: { min: 1, max: 1 },
+    weight: 0.25,
+  },
   { name: "token_savings", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
-  { name: "context_preservation", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
+  {
+    name: "context_preservation",
+    scorerVersion: "1.0.0",
+    tolerance: { min: 1, max: 1 },
+    weight: 0.25,
+  },
   { name: "usage_bounds", scorerVersion: "1.0.0", tolerance: { min: 1, max: 1 }, weight: 0.25 },
 ];
 
@@ -35,7 +40,6 @@ type UsageAccumulator = {
   inputTokens: number;
   outputTokens: number;
 };
-
 
 function denseNotes(label: string, repeat = 28): string {
   return Array.from(
@@ -129,9 +133,6 @@ function createUsageTrackingProvider(
     maxOutputTokens: provider.maxOutputTokens,
   };
 }
-
-
-
 
 function evaluateCompactionEventPresence(
   compactEvents: Array<Extract<CanonicalAgentEvent, { type: "context.compacted" }>>

@@ -3,7 +3,7 @@
  */
 
 import type { LLMStreamEvent } from "@obsku/framework";
-import type { FinishReason, LanguageModelUsage, TextStreamPart, ToolSet } from "ai";
+import type { LanguageModelUsage, TextStreamPart, ToolSet } from "ai";
 import { mapAiSdkError } from "./errors.js";
 import { mapAiSdkStopReason } from "./stop-reason.js";
 

@@ -292,7 +292,6 @@ describe("mapAiSdkError - error precedence", () => {
 // ---------------------------------------------------------------------------
 describe("mapAiSdkError - cause preservation", () => {
   test("preserves cause for all error types", () => {
-    const originalError = new Error("Original cause");
     const error = { statusCode: 429, message: "Rate limited" };
     // The function doesn't directly accept cause, but the error object can have it
     const result = mapAiSdkError(error);

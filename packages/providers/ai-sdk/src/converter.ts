@@ -3,7 +3,6 @@
  */
 
 import {
-  assertNever,
   BlockType,
   type ContentBlock,
   type JsonSchema,
@@ -11,7 +10,6 @@ import {
   type Message,
   type ToolDef,
 } from "@obsku/framework";
-import { mapAiSdkStopReason } from "./stop-reason";
 import type {
   CoreMessage,
   GenerateTextResult,
@@ -19,6 +17,7 @@ import type {
   ToolCallPart,
   ToolSet,
 } from "ai";
+import { mapAiSdkStopReason } from "./stop-reason";
 
 // --- obsku → AI SDK ---
 
@@ -135,7 +134,7 @@ export function toAiSdkTools(
   for (const tool of tools) {
     result[tool.name] = {
       description: tool.description,
-      parameters: tool.inputSchema,
+      parameters: tool.inputSchema as JsonSchema,
     };
   }
 
