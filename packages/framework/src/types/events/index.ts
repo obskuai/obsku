@@ -36,8 +36,6 @@ export type {
 export type {
   AgentState,
   AgentUsage,
-  LegacyJoin,
-  LegacyUnderscore,
   TimestampedEvent,
 } from "./base.ts";
 // Checkpoint and Memory events
@@ -83,31 +81,6 @@ export type {
   HandoffCompleteEvent,
   HandoffStartEvent,
 } from "./handoff.ts";
-// Legacy compatibility
-export type {
-  AgentComplete,
-  AgentError,
-  AgentTransition,
-  LegacyAgentCompleteEvent,
-  LegacyAgentErrorEvent,
-  LegacyAgentEvent,
-  LegacyAgentTransitionEvent,
-  LegacyContextCompactedEvent,
-  LegacyContextPrunedEvent,
-  LegacyPlannerThinkingEvent,
-  LegacyStreamChunkEvent,
-  LegacyStreamEndEvent,
-  LegacyStreamStartEvent,
-  LegacySupervisorWorkerOutputEvent,
-  LegacyToolCallingEvent,
-  LegacyToolResult,
-  LegacyToolResultEvent,
-  PlannerThinking,
-  StreamChunk,
-  StreamEnd,
-  StreamStart,
-  ToolCalling,
-} from "./legacy.ts";
 // Session events
 export type {
   SessionEndEvent,

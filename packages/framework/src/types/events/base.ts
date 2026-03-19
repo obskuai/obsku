@@ -25,12 +25,3 @@ export interface AgentUsage {
   totalOutputTokens: number;
 }
 
-// Legacy type helpers
-type LegacyJoin<
-  TLeft extends string,
-  TRight extends string,
-> = `${Capitalize<TLeft>}${Capitalize<TRight>}`;
-
-type LegacyUnderscore = "_";
-
-export type { LegacyJoin, LegacyUnderscore };

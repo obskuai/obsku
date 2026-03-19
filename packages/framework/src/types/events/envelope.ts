@@ -58,6 +58,4 @@ export interface SseEventEnvelope<TData = unknown, TType extends string = AgentE
 export type CanonicalSseEvent<TEvent extends CanonicalAgentEvent = CanonicalAgentEvent> =
   SseEventEnvelope<Omit<TEvent, "timestamp" | "type">, TEvent["type"]>;
 
-import type { LegacyAgentEvent } from "./legacy.ts";
-
-export type AgentEvent = CanonicalAgentEvent | LegacyAgentEvent;
+export type AgentEvent = CanonicalAgentEvent;
