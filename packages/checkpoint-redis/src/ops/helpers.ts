@@ -1,4 +1,4 @@
-import { DEFAULTS, formatError, telemetryLog } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework";
 import { type JsonPlusSerializer, validate } from "@obsku/framework/checkpoint/backend-shared";
 import type { RedisClientType } from "redis";
 import { SCAN_CHUNK_SIZE } from "../constants";
@@ -31,7 +31,7 @@ export function safeDeserialize<T>(
       serializedValue.length > DEFAULTS.preview.redisLogPreviewLength
         ? `${serializedValue.slice(0, DEFAULTS.preview.redisLogPreviewLength)}…`
         : serializedValue;
-    const errorText = formatError(error);
+    const errorText = getErrorMessage(error);
     telemetryLog(`${errorMessage} key=${key ?? "unknown"} error=${errorText} data=${preview}`);
     return null;
   }
