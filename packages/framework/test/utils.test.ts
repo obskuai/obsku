@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   extractJsonFromText,
-  formatError,
+  getErrorMessage,
   generateId,
   isAsyncIterable,
   safeJsonParse,
@@ -52,31 +52,31 @@ describe("isAsyncIterable", () => {
   });
 });
 
-describe("formatError", () => {
+describe("getErrorMessage", () => {
   test("extracts message from Error instance", () => {
     const error = new Error("Something went wrong");
-    expect(formatError(error)).toBe("Something went wrong");
+    expect(getErrorMessage(error)).toBe("Something went wrong");
   });
 
   test("returns string as-is for string input", () => {
-    expect(formatError("plain error message")).toBe("plain error message");
+    expect(getErrorMessage("plain error message")).toBe("plain error message");
   });
 
   test("converts number to string", () => {
-    expect(formatError(404)).toBe("404");
+    expect(getErrorMessage(404)).toBe("404");
   });
 
   test("converts null to string", () => {
-    expect(formatError(null)).toBe("null");
+    expect(getErrorMessage(null)).toBe("null");
   });
 
   test("converts undefined to string", () => {
-    expect(formatError(undefined)).toBe("undefined");
+    expect(getErrorMessage(undefined)).toBe(undefined);
   });
 
   test("converts object to string", () => {
     const obj = { code: 500 };
-    expect(formatError(obj)).toBe("[object Object]");
+    expect(getErrorMessage(obj)).toBe('{"code":500}');
   });
 
   test("handles custom Error subclass", () => {
@@ -88,7 +88,7 @@ describe("formatError", () => {
     }
 
     const error = new CustomError("Custom error occurred");
-    expect(formatError(error)).toBe("Custom error occurred");
+    expect(getErrorMessage(error)).toBe("Custom error occurred");
   });
 });
 
