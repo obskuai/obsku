@@ -1,5 +1,5 @@
 import { DEFAULTS } from "../defaults";
-import { formatError, generateId } from "../utils";
+import { getErrorMessage, generateId } from "../utils";
 import { JSONRPC_VERSION } from "./constants";
 import { createTimeoutError, parseJsonRpcResponse, unwrapJsonRpcText } from "./shared";
 import type { JsonRpcRequest, RemoteAgentUrlConfig } from "./types";
@@ -44,7 +44,7 @@ export async function callRemoteAgentUrl(
     }
     throw new RemoteAgentError(
       agentName,
-      `Failed to connect to remote agent: ${formatError(error)}`,
+      `Failed to connect to remote agent: ${getErrorMessage(error)}`,
       error
     );
   }

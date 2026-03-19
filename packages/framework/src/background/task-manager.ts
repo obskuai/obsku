@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { DEFAULTS } from "../defaults";
 import type { AgentEvent } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { TaskConcurrencyError } from "./errors";
 
 export type TaskState = "pending" | "running" | "completed" | "failed" | "timeout";
@@ -84,7 +84,7 @@ export class TaskManager {
         const completedAt = Date.now();
         const isTimeout = error instanceof Error && error.message === "Task timeout";
         entry.state = isTimeout ? "timeout" : "failed";
-        entry.error = formatError(error);
+        entry.error = getErrorMessage(error);
         entry.completedAt = completedAt;
         if (isTimeout) {
           this.config.onEvent?.({
@@ -95,7 +95,7 @@ export class TaskManager {
           });
         } else {
           this.config.onEvent?.({
-            error: formatError(error),
+            error: getErrorMessage(error),
             taskId: id,
             timestamp: completedAt,
             toolName: pluginName,

@@ -1,5 +1,5 @@
 import type { AgentEvent } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import {
   getRestoredCheckpointGraphResult,
   makeCompleteGraphResult,
@@ -86,7 +86,7 @@ export async function executeGraph(
       throw error;
     }
     return {
-      error: makeGraphFailureEnvelope(formatError(error)),
+      error: makeGraphFailureEnvelope(getErrorMessage(error)),
       results: Object.fromEntries(results),
       status: "Failed",
     };

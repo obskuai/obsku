@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import type { JsonRpcResponse } from "./types";
 import { JsonRpcError, RemoteAgentError } from "./types";
 
@@ -50,7 +50,7 @@ export async function parseJsonRpcResponse(
     return result.data;
   } catch (error: unknown) {
     if (error instanceof RemoteAgentError) {throw error;}
-    throw new RemoteAgentError(agentName, `Invalid JSON response: ${formatError(error)}`, error);
+    throw new RemoteAgentError(agentName, `Invalid JSON response: ${getErrorMessage(error)}`, error);
   }
 }
 

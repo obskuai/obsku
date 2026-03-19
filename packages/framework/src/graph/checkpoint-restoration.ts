@@ -1,6 +1,6 @@
 import type { CheckpointNodeResult } from "../checkpoint/types";
 import { isRecord } from "../utils/type-guards";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import type {
   CompleteGraphResult,
   ExecuteGraphOptions,
@@ -72,7 +72,7 @@ function resolveErrorMessageForEnvelope(record: { error?: unknown; output?: unkn
     return { message: record.output, preserveEnvelope: false };
   }
 
-  return { message: formatError(record.output), preserveEnvelope: false };
+  return { message: getErrorMessage(record.output), preserveEnvelope: false };
 }
 
 function extractFailureEnvelope(record: {

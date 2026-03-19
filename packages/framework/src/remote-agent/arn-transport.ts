@@ -1,5 +1,5 @@
 import { DEFAULTS } from "../defaults";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { createTimeoutError } from "./shared";
 import type { RemoteAgentArnConfig } from "./types";
 import { RemoteAgentError } from "./types";
@@ -25,7 +25,7 @@ async function loadAwsSdk(agentName: string): Promise<AwsSdkModule> {
     const mod = await import("@aws-sdk/client-bedrock-agentcore" as string);
     return mod as AwsSdkModule;
   } catch (error: unknown) {
-    throw new RemoteAgentError(agentName, `Failed to load AWS SDK: ${formatError(error)}`, error);
+    throw new RemoteAgentError(agentName, `Failed to load AWS SDK: ${getErrorMessage(error)}`, error);
   }
 }
 
@@ -95,7 +95,7 @@ function translateAwsError(agentName: string, err: unknown, timeout: number): Re
     return new RemoteAgentError(agentName, `Rate limited: retry after delay`, err);
   }
 
-  return new RemoteAgentError(agentName, `AWS SDK error: ${formatError(err)}`, err);
+  return new RemoteAgentError(agentName, `AWS SDK error: ${getErrorMessage(err)}`, err);
 }
 
 export async function callRemoteAgentArn(

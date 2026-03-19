@@ -4,7 +4,7 @@
 
 import { isInterruptError } from "../interrupt/types";
 import type { AgentEvent, LLMProvider } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { GraphNestingError } from "./errors";
 import { executeAgentNode } from "./node-execution/agent-node";
 import { executeFunctionNode } from "./node-execution/function-node";
@@ -86,7 +86,7 @@ export async function executeNode(
     }
     return {
       duration: Date.now() - start,
-      output: makeGraphFailureEnvelope(formatError(error)),
+      output: makeGraphFailureEnvelope(getErrorMessage(error)),
       status: "Failed",
     };
   }
