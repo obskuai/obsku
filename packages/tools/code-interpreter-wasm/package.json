@@ -1,0 +1,57 @@
+{
+  "name": "@obsku/tool-code-interpreter-wasm",
+  "version": "0.1.0",
+  "description": "WASM sandboxed code interpreter for @obsku/framework (internal-only)",
+  "keywords": [
+    "obsku",
+    "agent",
+    "framework",
+    "tool",
+    "code",
+    "interpreter",
+    "wasm"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/tools/code-interpreter-wasm"
+  },
+  "author": "Obsku Team <team@obsku.dev>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@obsku/tool-code-interpreter": "workspace:*",
+    "@obsku/framework": "workspace:*",
+    "pyodide": "^0.26.0",
+    "quickjs-emscripten": "^0.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^20.0.0",
+    "effect": "*"
+  }
+}

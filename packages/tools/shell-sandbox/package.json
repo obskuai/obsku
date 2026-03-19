@@ -1,0 +1,59 @@
+{
+  "name": "@obsku/tool-shell-sandbox",
+  "version": "0.1.0",
+  "description": "Sandboxed shell execution tool using just-bash for @obsku/framework",
+  "keywords": [
+    "obsku",
+    "agent",
+    "framework",
+    "tool",
+    "shell",
+    "sandbox",
+    "exec"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/tools/shell-sandbox"
+  },
+  "author": "Obsku Team <team@obsku.dev>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --target=node --outdir dist && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "@obsku/framework": "workspace:*",
+    "effect": "^3.0.0",
+    "just-bash": "^2.13.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^20.0.0"
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

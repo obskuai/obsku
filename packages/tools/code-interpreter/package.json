@@ -1,0 +1,75 @@
+{
+  "name": "@obsku/tool-code-interpreter",
+  "version": "0.1.0",
+  "description": "Local code execution tool for @obsku/framework",
+  "keywords": [
+    "obsku",
+    "agent",
+    "framework",
+    "tool",
+    "code",
+    "interpreter"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/tools/code-interpreter"
+  },
+  "author": "Obsku Team <team@obsku.dev>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin-builder": {
+      "types": "./dist/plugin-builder.d.ts",
+      "bun": "./src/plugin-builder.ts",
+      "import": "./dist/plugin-builder.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts src/plugin-builder.ts --outdir dist --target node && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "@obsku/framework": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^20.0.0",
+    "effect": "*"
+  },
+  "peerDependencies": {
+    "@obsku/tool-code-interpreter-wasm": "*",
+    "@obsku/tool-code-interpreter-agentcore": "*"
+  },
+  "peerDependenciesMeta": {
+    "@obsku/tool-code-interpreter-wasm": {
+      "optional": true
+    },
+    "@obsku/tool-code-interpreter-agentcore": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

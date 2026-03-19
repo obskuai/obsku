@@ -1,0 +1,94 @@
+{
+  "name": "@obsku/framework",
+  "version": "0.1.0",
+  "description": "Effect-powered agent framework with declarative, provider-agnostic API",
+  "keywords": [
+    "obsku",
+    "agent",
+    "ai",
+    "llm",
+    "typescript",
+    "framework"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/framework"
+  },
+  "author": "obsku",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./security": {
+      "types": "./dist/security/index.d.ts",
+      "bun": "./src/security/index.ts",
+      "import": "./dist/security/index.js"
+    },
+    "./models": {
+      "types": "./dist/models/index.d.ts",
+      "bun": "./src/models/index.ts",
+      "import": "./dist/models/index.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "bun": "./src/internal.ts",
+      "import": "./dist/internal.js"
+    },
+    "./checkpoint/backend-shared": {
+      "types": "./dist/checkpoint/backend-shared.d.ts",
+      "bun": "./src/checkpoint/backend-shared.ts",
+      "import": "./dist/checkpoint/backend-shared.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts src/internal.ts src/models/index.ts src/security/index.ts src/checkpoint/backend-shared.ts --outdir dist --target node && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly --outDir dist",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "effect": "^3.0.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "@effect/opentelemetry": "^0.3.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@opentelemetry/api": "^1.9.0"
+  },
+  "peerDependenciesMeta": {
+    "@effect/opentelemetry": {
+      "optional": true
+    },
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    },
+    "@opentelemetry/api": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

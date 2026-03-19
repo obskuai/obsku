@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": ".",
+    "paths": {
+      "@obsku/framework": ["./packages/framework/src"],
+      "@obsku/framework/models": ["./packages/framework/src/models"],
+
+      "@obsku/checkpoint-sqlite": ["./packages/checkpoint-sqlite/src"],
+
+      "@obsku/provider-bedrock": ["./packages/providers/bedrock/src"],
+
+      "@obsku/tool-code-interpreter": ["./packages/tools/code-interpreter/src"],
+      "@obsku/tool-code-interpreter-wasm": ["./packages/tools/code-interpreter-wasm/src"],
+
+      "@obsku/cli": ["./packages/cli/src"]
+    }
+  },
+  "references": [
+    { "path": "./packages/framework" },
+
+    { "path": "./packages/checkpoint-sqlite" },
+
+    { "path": "./packages/providers/bedrock" },
+
+    { "path": "./packages/cli" }
+  ],
+  "exclude": ["node_modules", "dist", "build", "packages/*/dist"],
+  "files": []
+}

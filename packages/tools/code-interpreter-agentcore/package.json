@@ -1,0 +1,78 @@
+{
+  "name": "@obsku/tool-code-interpreter-agentcore",
+  "version": "0.1.0",
+  "description": "AWS Bedrock AgentCore code interpreter for @obsku/framework",
+  "keywords": [
+    "obsku",
+    "agent",
+    "framework",
+    "tool",
+    "code",
+    "interpreter",
+    "agentcore",
+    "aws"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/tools/code-interpreter-agentcore"
+  },
+  "author": "Obsku Team <team@obsku.dev>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.782.0",
+    "@aws-sdk/lib-storage": "^3.782.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.781.0",
+    "@smithy/types": "^4.2.0",
+    "@types/node": "^20.0.0",
+    "effect": "^3.19.15",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.781.0",
+    "@obsku/framework": "workspace:*",
+    "@obsku/tool-code-interpreter": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-bedrock-agentcore": {
+      "optional": true
+    },
+    "@obsku/framework": {
+      "optional": true
+    },
+    "@obsku/tool-code-interpreter": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

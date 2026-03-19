@@ -1,0 +1,5 @@
+#!/bin/sh
+msg=$(cat "$1")
+if [ -n "$msg" ]; then
+  echo "$msg"
+fi

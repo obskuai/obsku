@@ -1,0 +1,58 @@
+{
+  "name": "@obsku/adapter-claude-code",
+  "version": "0.1.0",
+  "description": "Claude Code adapter for @obsku/framework",
+  "keywords": [
+    "obsku",
+    "agent",
+    "ai",
+    "llm",
+    "typescript",
+    "adapter",
+    "claude",
+    "claude-code"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/adapters/claude-code"
+  },
+  "author": "obsku",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun \u0026\u0026 rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "@obsku/framework": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "effect": "^3.0.0",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "\u003e=18.0.0"
+  }
+}
