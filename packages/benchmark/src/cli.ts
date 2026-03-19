@@ -10,7 +10,7 @@ import { getErrorMessage } from "@obsku/framework";
 import { getBaselinesBaseDir, getRunsBaseDir } from "./artifacts/storage";
 import { createComparisonReport, writeComparisonReport } from "./baseline/compare";
 import { compareToBaseline, loadBaseline, saveBaseline } from "./baseline/index";
-import { fmtCost, fmtDelta, fmtScore, fmtStatus } from "./cli/formatters";
+import { fmtCost, fmtDelta, fmtScore, fmtStatus, fmtTokens } from "./cli/formatters";
 import {
   ALL_SCENARIOS,
   DEFAULT_BUDGET_USD,
@@ -95,8 +95,9 @@ async function main(): Promise<void> {
     const scoreStr = fmtScore(result.compositeScore);
     const costStr = fmtCost(result.usage?.estimatedCostUsd);
     const errStr = result.errorMessage ? ` err="${result.errorMessage.slice(0, 80)}"` : "";
+    const tokenStr = fmtTokens(result.usage);
     console.log(
-      `  ${fmtStatus(result.status)} ${result.scenarioName}${scoreStr}${costStr}${errStr}`
+      `  ${fmtStatus(result.status)} ${result.scenarioName}${scoreStr}${costStr}${tokenStr}${errStr}`
     );
   }
   console.log("");
