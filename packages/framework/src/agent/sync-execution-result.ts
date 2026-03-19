@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import type { ObskuConfig } from "../services/config";
 import type { Message, ToolResult, ToolUseContent } from "../types";
-import { formatError, toToolResultOutput } from "../utils";
+import { getErrorMessage, toToolResultOutput } from "../utils";
 import {
   createToolExecutionResult,
   makeErrorEnvelope,
@@ -42,7 +42,7 @@ export function wrapToolExecutionResult(
 }
 
 export function wrapToolExecutionError(tc: ToolUseContent, err: unknown): ToolExecutionResult {
-  return createToolExecutionResult(tc, makeErrorEnvelope(formatError(err)), true);
+  return createToolExecutionResult(tc, makeErrorEnvelope(getErrorMessage(err)), true);
 }
 
 function withInjectedMessages(

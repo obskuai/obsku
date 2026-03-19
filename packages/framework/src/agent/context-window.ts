@@ -41,7 +41,7 @@ import type { Logger } from "../types/plugin-config";
 import type { AgentEvent } from "../types/events/index";
 import type { Message } from "../types/llm";
 import type { LLMProvider } from "../types/providers";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { telemetryLog } from "../telemetry/log";
 import { DefaultCompactionStrategy } from "./compaction";
 import { estimateMessageTokens } from "./token-estimation";
@@ -216,7 +216,7 @@ export class ContextWindowManager {
         tokensSaved: originalTokens - compactedTokens,
       };
     } catch (error: unknown) {
-      this.logger?.warn(`[ContextWindow] Compaction failed, using fallback: ${formatError(error)}`);
+      this.logger?.warn(`[ContextWindow] Compaction failed, using fallback: ${getErrorMessage(error)}`);
       const fallback = [messages[0], ...messages.slice(-DEFAULTS.compaction.recentMessagesBuffer)];
       const fallbackTokens = estimateMessageTokens(fallback);
       return {

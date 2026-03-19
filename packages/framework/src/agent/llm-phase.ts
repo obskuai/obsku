@@ -9,7 +9,7 @@ import type {
   ToolDef,
 } from "../types";
 import { ProviderError } from "../types/provider-error";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { isRecord } from "../utils/type-guards";
 import type { EmitFn } from "./tool-executor";
 
@@ -109,7 +109,7 @@ export function callLLMWithEvents(
         to: "Error",
         type: "agent.transition",
       });
-      yield* emit({ message: formatError(error), timestamp: Date.now(), type: "agent.error" });
+      yield* emit({ message: getErrorMessage(error), timestamp: Date.now(), type: "agent.error" });
       throw error;
     }
 

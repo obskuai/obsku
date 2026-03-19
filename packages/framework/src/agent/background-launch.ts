@@ -4,7 +4,7 @@ import { parseJson } from "../parse-contract";
 import type { InternalPlugin } from "../plugin";
 import { telemetryLog } from "../telemetry/log";
 import type { ToolUseContent } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import type { ResolvedTool } from "./setup";
 import { createParseErrorEvent, createToolCallingEvent } from "./tool-call-shared";
 import {
@@ -41,7 +41,7 @@ export function launchBackgroundTask(
     Effect.runPromise(
       plugin.execute({ ...tc.input, wait: true }).pipe(
         Effect.catchAll((err) => {
-          const error = formatError(err);
+          const error = getErrorMessage(err);
           telemetryLog(`Background task execution failed for ${tc.name}: ${error}`);
           return Effect.succeed({
             error,
