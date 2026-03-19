@@ -4,16 +4,36 @@
 
 import type { BenchmarkContext } from "../runner/index";
 import {
+  agentFactoryScenario,
   checkpointResumeScenario,
   compactionScenario,
   coreAgentScenario,
+  crewScenario,
+  graphCycleScenario,
+  graphParallelScenario,
+  guardrailsScenario,
+  memoryScenario,
+  providerHooksScenario,
+  structuredOutputScenario,
+  supervisorScenario,
+  toolMiddlewareScenario,
 } from "../scenarios/index";
 import type { Scenario } from "../types/index";
 
 export const ALL_SCENARIOS: Array<Scenario<BenchmarkContext>> = [
-  coreAgentScenario,
+  agentFactoryScenario,
   checkpointResumeScenario,
   compactionScenario,
+  coreAgentScenario,
+  crewScenario,
+  graphCycleScenario,
+  graphParallelScenario,
+  guardrailsScenario,
+  memoryScenario,
+  providerHooksScenario,
+  structuredOutputScenario,
+  supervisorScenario,
+  toolMiddlewareScenario,
 ];
 
 export const DEFAULT_TIMEOUT_MS = 120_000;
