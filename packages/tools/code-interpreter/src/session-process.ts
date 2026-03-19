@@ -4,8 +4,6 @@ import { DEFAULTS, DEFAULT_BLOCKLIST_PATTERNS, type EnvFilterOptions, filterEnvV
 import type { SessionLanguage } from "./session-payload";
 
 const PROCESS_KILL_GRACE_MS = DEFAULTS.processKillGraceTimeout;
-export type { EnvFilterOptions } from "@obsku/framework";
-export { DEFAULT_BLOCKLIST_PATTERNS, filterEnvVars, matchesPattern } from "@obsku/framework";
 
 export function commandForLanguage(language: SessionLanguage): {
   args: Array<string>;
@@ -50,14 +48,20 @@ export function killProcessTree(
       process.kill(-proc.pid, signal);
       return;
     } catch (error: unknown) {
-      console.error("Failed to kill process group:", error);
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ESRCH") {
+        process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+      }
     }
   }
 
   try {
     proc.kill(signal);
   } catch (error: unknown) {
-    console.error("Failed to kill process:", error);
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "ESRCH") {
+      process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+    }
   }
 }
 
