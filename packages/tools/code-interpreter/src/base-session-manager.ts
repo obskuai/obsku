@@ -1,10 +1,6 @@
-import { formatError, telemetryLog } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework";
 import { randomUUID } from "node:crypto";
-import {
-  createErrorResult,
-  DEFAULT_IDLE_TIMEOUT_MS,
-  DEFAULT_MAX_DURATION_MS,
-} from "./constants";
+import { createErrorResult } from "./constants";
 import type { ExecutionOptions, ExecutionResult, SessionOptions, SupportedLanguage } from "./types";
 
 export interface BaseSessionRecord<TLanguage extends SupportedLanguage = SupportedLanguage> {
@@ -94,7 +90,7 @@ export abstract class BaseSessionManager<
     try {
       return await this.executeSession(session, code);
     } catch (error: unknown) {
-      const message = formatError(error);
+      const message = getErrorMessage(error);
       return createErrorResult(message);
     } finally {
       session.isExecuting = false;
@@ -135,13 +131,13 @@ export abstract class BaseSessionManager<
     return {
       createdAt: now,
       id: sessionId,
-      idleTimeoutMs: opts.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS,
+      idleTimeoutMs: opts.idleTimeoutMs ?? DEFAULTS.codeInterpreterIdleTimeout,
       init: Promise.resolve(),
       isClosed: false,
       isExecuting: false,
       language,
       lastUsedAt: now,
-      maxDurationMs: opts.maxDurationMs ?? DEFAULT_MAX_DURATION_MS,
+      maxDurationMs: opts.maxDurationMs ?? DEFAULTS.codeInterpreterMaxDuration,
     };
   }
 

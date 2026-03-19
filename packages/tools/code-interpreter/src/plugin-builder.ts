@@ -5,7 +5,7 @@
  * and AgentCore code interpreter wrappers, eliminating duplication.
  */
 
-import { formatError, plugin } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
 
 import { z } from "zod";
 import { serializeExecutionResult } from "./serialization";
@@ -153,7 +153,7 @@ export const buildCodeInterpreterPlugin = (opts: CodeInterpreterPluginOptions) =
 
         return serializeExecutionResult(result);
       } catch (error: unknown) {
-        const message = formatError(error);
+        const message = getErrorMessage(error);
         return { content: message, isError: true };
       }
     },

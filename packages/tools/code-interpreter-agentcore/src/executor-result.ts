@@ -1,4 +1,4 @@
-import { formatError } from "@obsku/framework";
+import { getErrorMessage } from "@obsku/framework";
 import { ExecutorStageError } from "./executor-stage-error";
 import type { StructuredContent } from "./parser";
 import type { AgentCoreExecutionResult, ExecutionResult } from "./types";
@@ -27,7 +27,7 @@ export function buildFailureResult(error: unknown): AgentCoreExecutionResult {
     executionTimeMs: 0,
     exitCode: 1,
     failedStage: error instanceof ExecutorStageError ? error.stage : undefined,
-    stderr: error instanceof ExecutorStageError ? error.message : formatError(error),
+    stderr: error instanceof ExecutorStageError ? error.message : getErrorMessage(error),
     stdout: "",
     success: false,
   };

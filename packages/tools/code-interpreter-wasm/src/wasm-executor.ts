@@ -1,4 +1,4 @@
-import { formatError } from "@obsku/framework";
+import { getErrorMessage } from "@obsku/framework";
 import { PyodideRuntime } from "./runtimes/pyodide";
 import { QuickJSRuntime } from "./runtimes/quickjs";
 import { DEFAULT_TIMEOUT_MS } from "./runtimes/wasm-shared";
@@ -20,7 +20,7 @@ type WasmSession = {
 };
 
 function normalizeExecutionError(error: unknown): ExecutionResult {
-  const message = formatError(error);
+  const message = getErrorMessage(error);
   return {
     executionTimeMs: 0,
     exitCode: 1,

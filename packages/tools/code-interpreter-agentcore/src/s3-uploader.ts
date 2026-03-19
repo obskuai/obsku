@@ -1,7 +1,7 @@
 import type { ExecutionResult } from "@obsku/tool-code-interpreter";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { formatError, telemetryLog } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
 
 export interface S3UploadConfig {
   /** S3 bucket name */
@@ -79,7 +79,7 @@ export class S3Uploader {
 
         telemetryLog(`s3_upload_success: file=${filename} key=${key}`);
       } catch (error: unknown) {
-        const errorMsg = formatError(error);
+        const errorMsg = getErrorMessage(error);
         throw new Error(`S3 upload failed for ${filename}: ${errorMsg}`);
       }
     }
@@ -135,7 +135,7 @@ export class S3Uploader {
           `\n\n[S3 Upload] Outputs uploaded to: https://${this.bucket}.s3.${this.region}.amazonaws.com/${this.prefix}${sessionId}/\n${s3Urls}`,
       };
     } catch (error: unknown) {
-      const errorMsg = formatError(error);
+      const errorMsg = getErrorMessage(error);
       telemetryLog(`s3_upload_failed: session=${sessionId} error=${errorMsg}`);
       return { ...result, stdout: result.stdout + `\n\n[S3 Upload Error] ${errorMsg}` };
     }

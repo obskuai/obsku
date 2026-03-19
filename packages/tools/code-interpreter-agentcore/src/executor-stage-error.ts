@@ -1,4 +1,4 @@
-import { formatError } from "@obsku/framework";
+import { getErrorMessage } from "@obsku/framework";
 import type { ExecutorStage } from "./types";
 
 export class ExecutorStageError extends Error {
@@ -6,7 +6,7 @@ export class ExecutorStageError extends Error {
     public readonly stage: ExecutorStage,
     cause: unknown
   ) {
-    super(formatError(cause));
+    super(getErrorMessage(cause));
     this.name = "ExecutorStageError";
   }
 }
