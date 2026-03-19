@@ -18,9 +18,6 @@ export function isAsyncIterable<T>(v: unknown): v is AsyncIterable<T> {
   return v != null && typeof v === "object" && Symbol.asyncIterator in v;
 }
 
-export function formatError(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 /**
  * Assert that a value is of type never (exhaustive switch check).

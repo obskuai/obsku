@@ -1,7 +1,6 @@
 // ============================================================================
 // CORE AGENT RUNTIME
 // ============================================================================
-export * from "./constants";
 export type { Agent } from "./agent";
 /**
  * Create an Agent from a declarative definition.
@@ -342,7 +341,6 @@ export type { ErrorClass } from "./error-utils";
 // ============================================================================
 export {
   assertNever,
-  formatError,
   generateId,
   isAsyncIterable,
   isRecord,

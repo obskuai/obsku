@@ -98,13 +98,22 @@ export {
   serializeEmbedding,
   VectorDimensionError,
 } from "./checkpoint/similarity";
-
+export type { ErrorClass } from "./error-utils";
+// ============================================================================
+// ERROR UTILITIES (for dependent packages)
+// ============================================================================
+export {
+  classifyError,
+  getErrorMessage,
+  getErrorStack,
+  isRetryEligible,
+  toErrorRecord,
+} from "./error-utils";
 // ============================================================================
 // UTILITIES
 // ============================================================================
 export {
   assertNever,
-  formatError,
   isAsyncIterable,
   normalizeStopReason,
 } from "./generic-utils";
@@ -120,15 +129,3 @@ export {
   toToolResultEnvelope,
   toToolResultOutput,
 } from "./tool-result-utils";
-
-// ============================================================================
-// ERROR UTILITIES (for dependent packages)
-// ============================================================================
-export {
-  classifyError,
-  getErrorMessage,
-  getErrorStack,
-  isRetryEligible,
-  toErrorRecord,
-} from "./error-utils";
-export type { ErrorClass } from "./error-utils";
