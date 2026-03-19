@@ -19,7 +19,16 @@ export function formatExecutionPayload(
   }
 
   const statusMarker = userCodeStatusMarker(delimiter);
-  return `/* catch (e) { console.error(e); } finally { process.stdout.write("${delimiter}\\n"); } */ let __obskuUserCodeFailed__ = false; try { try { ${code}; } catch (e) { __obskuUserCodeFailed__ = true; throw e; } } catch (e) { console.error(e); } finally { process.stdout.write("${statusMarker}" + (__obskuUserCodeFailed__ ? "error" : "ok") + "\\n"); process.stdout.write("${delimiter}\\n"); }\n`;
+  return (
+    `/* catch (e) { console.error(e); } finally { process.stdout.write("${delimiter}\\n"); } */` +
+    ` let __obskuUserCodeFailed__ = false;` +
+    ` try { try { ${code}; } catch (e) { __obskuUserCodeFailed__ = true; throw e; } }` +
+    ` catch (e) { console.error(e); }` +
+    ` finally {` +
+    ` process.stdout.write("${statusMarker}" + (__obskuUserCodeFailed__ ? "error" : "ok") + "\\n");` +
+    ` process.stdout.write("${delimiter}\\n");` +
+    ` }\n`
+  );
 }
 
 export function formatInitializationPayload(language: SessionLanguage, delimiter: string): string {
