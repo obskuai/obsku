@@ -3,7 +3,7 @@ import {
   agent,
   type CanonicalAgentEvent,
   type Checkpoint,
-  type CheckpointStore,
+  type CheckpointBackend,
   type GraphNode,
   graph,
   interrupt,
@@ -169,7 +169,7 @@ export const checkpointResumeScenario: Scenario<BenchmarkContext> = {
   version: "1.0.0",
   scoringCriteria: SCORING_CRITERIA,
   async run(ctx) {
-    let store: CheckpointStore = ctx.checkpointStore;
+    let store: CheckpointBackend = ctx.checkpointStore;
     let provider: LLMProvider = await ctx.createBedrockProvider({ maxOutputTokens: 256 });
     let shouldInterrupt = true;
     let rememberRuns = 0;

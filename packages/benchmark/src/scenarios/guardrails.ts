@@ -49,7 +49,15 @@ const echoTool: InternalPlugin = {
 };
 
 function isGuardrailError(error: unknown): error is GuardrailError {
-  return error instanceof GuardrailError || (error as { name?: string })?.name === "GuardrailError";
+  if (error instanceof GuardrailError) {
+    return true;
+  }
+
+  const candidate = error as { message?: string; name?: string } | undefined;
+  return (
+    candidate?.name === "GuardrailError" ||
+    candidate?.message?.startsWith("Guardrail blocked:") === true
+  );
 }
 
 function evaluateInputGuardrailBlock(summary: GuardrailRunSummary): MetricEvaluation {
