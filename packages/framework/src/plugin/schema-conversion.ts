@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { z } from "zod";
-import { telemetryLog } from "../telemetry";
+import { debugLog } from "../telemetry";
 import type { ParamDef } from "../types";
 
 // Strict Zod schema detection using the `_def` internal property.
@@ -66,7 +66,7 @@ export function convertZodToParamDef(zodSchema: z.ZodType): Record<string, Param
   try {
     jsonSchema = z.toJSONSchema(zodSchema) as Record<string, unknown>;
   } catch (error: unknown) {
-    telemetryLog(`Failed to convert Zod schema: ${error}`);
+    debugLog(`Failed to convert Zod schema: ${error}`);
     throw new Error(`Failed to convert Zod schema for plugin`);
   }
 

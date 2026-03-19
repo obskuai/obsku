@@ -50,7 +50,7 @@ export function killProcessTree(
     } catch (error: unknown) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "ESRCH") {
-        process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+        if (process.env.OBSKU_DEBUG) process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
       }
     }
   }
@@ -60,7 +60,7 @@ export function killProcessTree(
   } catch (error: unknown) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code !== "ESRCH") {
-      process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
+      if (process.env.OBSKU_DEBUG) process.stderr.write(`[obsku:code-interpreter] kill failed (code=${code}): ${error}\n`);
     }
   }
 }

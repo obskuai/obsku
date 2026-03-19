@@ -4,7 +4,7 @@ import {
   MessageRole,
   type ResponseFormat,
   type ToolDef,
-  DEFAULT_THINKING_BUDGET_TOKENS,
+  DEFAULTS,
 } from "@obsku/framework";
 import { toBedrockMessages, toBedrockSystemBlocks, toBedrockTools } from "./converters";
 
@@ -80,7 +80,7 @@ export function buildCommandConfig(
 ) {
   const isThinkingEnabled = thinkingBudgetTokens !== undefined && thinkingBudgetTokens > 0;
   const thinking = isThinkingEnabled
-    ? { budgetTokens: thinkingBudgetTokens ?? DEFAULT_THINKING_BUDGET_TOKENS }
+    ? { budgetTokens: thinkingBudgetTokens ?? DEFAULTS.thinkingBudgetTokens }
     : undefined;
 
   const { nonSystemMessages, systemBlocks } = extractSystemMessages(messages);

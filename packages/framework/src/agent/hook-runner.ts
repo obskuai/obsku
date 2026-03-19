@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 import type {
   BeforeLLMCallResult,
   LLMCallContext,
@@ -42,7 +42,7 @@ export function runHookSafe<T>(
   return hookEffect.pipe(
     Effect.map(Option.some),
     Effect.catchAll((hookError) => {
-      telemetryLog(`Hook ${hookName} failed: ${String(hookError)}`);
+      debugLog(`Hook ${hookName} failed: ${String(hookError)}`);
       return emit({
         error: String(hookError),
         hookName,
@@ -51,9 +51,9 @@ export function runHookSafe<T>(
       }).pipe(
         Effect.catchAll((emitError) => {
           const msg = `hook.error emit failed: emit=${emitError}, original=${hookError}`;
-          return Effect.logWarning(msg).pipe(Effect.map(() => Option.none<T>()));
-        }),
-        Effect.map(() => Option.none<T>())
+          debugLog(msg);
+          return Effect.succeed(Option.none<T>());
+        })
       );
     })
   );

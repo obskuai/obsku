@@ -1,6 +1,6 @@
 import { basename, relative } from "node:path";
 import type { ToolOutput } from "@obsku/framework";
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
+import { getErrorMessage, plugin } from "@obsku/framework";
 import { z } from "zod";
 import { globFiles, validatePath } from "./utils";
 import { DEFAULT_MAX_RESULTS } from "./grep";

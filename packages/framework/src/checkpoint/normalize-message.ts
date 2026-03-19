@@ -1,5 +1,5 @@
 import { parseAndValidate } from "../parse-contract";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 import type { ToolCall } from "../types/llm";
 import {
   ParsedStoredMessageSchema,
@@ -34,11 +34,11 @@ export function parseStoredMessage(raw: unknown): StoredMessage | null {
         };
       }
       if ("raw" in result) {
-        telemetryLog(
+        debugLog(
           `Skipping stored tool call with invalid JSON arguments: toolUseId=${toolCall.id}, raw=${result.raw}`
         );
       } else {
-        telemetryLog(
+        debugLog(
           `Skipping stored tool call with invalid argument schema: toolUseId=${toolCall.id}, value=${JSON.stringify(result.value)}`
         );
       }
@@ -91,7 +91,7 @@ function isToolCalls(value: unknown): boolean {
     }
     const recordResult = StoredToolCallSchema.safeParse(toolCall);
     if (!recordResult.success) {
-      telemetryLog("Invalid tool call payload in message");
+      debugLog("Invalid tool call payload in message");
       return false;
     }
     return true;
@@ -111,7 +111,7 @@ function isToolResults(value: unknown): value is Array<StoredToolResult> {
     }
     const recordResult = StoredToolResultSchema.safeParse(toolResult);
     if (!recordResult.success) {
-      telemetryLog("Invalid tool result payload in message");
+      debugLog("Invalid tool result payload in message");
       return false;
     }
     return true;

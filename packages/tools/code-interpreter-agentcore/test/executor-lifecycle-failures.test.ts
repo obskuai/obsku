@@ -349,7 +349,7 @@ describe("lifecycle failure — stage 4: S3 upload", () => {
 
 // ─── 5. Stop-session failure (cleanup) ────────────────────────────────────────
 // stopSession wraps StopSession in try/catch → errors are swallowed via
-// telemetryLog. The execution result is never affected by cleanup failure.
+// debugLog. The execution result is never affected by cleanup failure.
 
 describe("lifecycle failure — stage 5: stop-session (cleanup)", () => {
   test("execution result is unchanged when StopSession throws", async () => {

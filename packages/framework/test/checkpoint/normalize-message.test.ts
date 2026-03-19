@@ -57,6 +57,7 @@ describe("parseStoredMessage", () => {
 
     const stderrChunks: Array<string> = [];
     const originalWrite = process.stderr.write.bind(process.stderr);
+    process.env.OBSKU_DEBUG = "1";
     process.stderr.write = (chunk: unknown) => {
       stderrChunks.push(String(chunk));
       return true;
@@ -74,6 +75,7 @@ describe("parseStoredMessage", () => {
       expect(combined).toContain("tool-1");
     } finally {
       process.stderr.write = originalWrite;
+      delete process.env.OBSKU_DEBUG;
     }
   });
 
@@ -97,6 +99,7 @@ describe("parseStoredMessage", () => {
 
     const stderrChunks: Array<string> = [];
     const originalWrite = process.stderr.write.bind(process.stderr);
+    process.env.OBSKU_DEBUG = "1";
     process.stderr.write = (chunk: unknown) => {
       stderrChunks.push(String(chunk));
       return true;
@@ -114,6 +117,7 @@ describe("parseStoredMessage", () => {
       expect(combined).toContain("tool-1");
     } finally {
       process.stderr.write = originalWrite;
+      delete process.env.OBSKU_DEBUG;
     }
   });
 

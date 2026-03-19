@@ -78,11 +78,13 @@ function writeToStream(stream: NodeJS.WriteStream, ...msgs: Array<unknown>): voi
   stream.write(msgs.map(String).join(" ") + "\n");
 }
 
+const isDebug = () => Boolean(process.env.OBSKU_DEBUG);
+
 export const defaultLogger: Logger = {
-  debug: (...msgs) => writeToStream(process.stdout, ...msgs),
+  debug: (...msgs) => { if (isDebug()) writeToStream(process.stdout, ...msgs); },
   error: (...msgs) => writeToStream(process.stderr, ...msgs),
-  info: (...msgs) => writeToStream(process.stdout, ...msgs),
-  warn: (...msgs) => writeToStream(process.stderr, ...msgs),
+  info: (...msgs) => { if (isDebug()) writeToStream(process.stdout, ...msgs); },
+  warn: (...msgs) => { if (isDebug()) writeToStream(process.stderr, ...msgs); },
 };
 
 export function createLogger(pluginName: string, baseLogger: Logger = defaultLogger): Logger {

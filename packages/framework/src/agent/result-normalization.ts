@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { DEFAULTS } from "../defaults";
 import type { ObskuConfig } from "../services/config";
-import { telemetryLog } from "../telemetry";
+import { debugLog } from "../telemetry";
 import type { Message, ToolUseContent } from "../types";
 import { getErrorMessage, normalizeToolResultPayload, toToolResultOutput } from "../utils";
 import {
@@ -24,7 +24,7 @@ export function buildSingleToolEffect<E>(
     Effect.map((result) => {
       const normalizedResult = toToolResultOutput(result);
       if (!normalizeToolResultPayload(result)) {
-        telemetryLog(`Unexpected tool result shape for ${tc.name}, normalized through boundary`);
+        debugLog(`Unexpected tool result shape for ${tc.name}, normalized through boundary`);
       }
       const base = createToolExecutionResult(
         tc,
@@ -36,7 +36,7 @@ export function buildSingleToolEffect<E>(
     }),
     Effect.catchAll((err) => {
       const errorMsg = getErrorMessage(err);
-      telemetryLog(
+      debugLog(
         `plugin_execution_error: plugin=${tc.name} error=${errorMsg.slice(0, DEFAULTS.preview.logPreviewLength)}`
       );
       return Effect.succeed(createToolExecutionResult(tc, makeErrorEnvelope(errorMsg), true));

@@ -1,5 +1,5 @@
 import { getErrorMessage, getErrorStack } from "../error-utils";
-import { telemetryLog } from "./log";
+import { debugLog } from "./log";
 export interface TelemetrySetupOptions {
   enabled?: boolean;
   endpoint?: string;
@@ -67,7 +67,7 @@ export async function setupTelemetry(options: TelemetrySetupOptions): Promise<vo
     _sdk = sdk as SdkHandle;
     _sdk.start();
   } catch (error: unknown) {
-    telemetryLog(`setup failed: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`);
+    debugLog(`setup failed: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`);
   }
 }
 
@@ -76,7 +76,7 @@ export async function shutdownTelemetry(): Promise<void> {
     try {
       await _sdk.shutdown();
     } catch (error: unknown) {
-      telemetryLog(`shutdown failed: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`);
+      debugLog(`shutdown failed: ${getErrorMessage(error)}. Stack: ${getErrorStack(error)}`);
     } finally {
       _sdk = null;
     }

@@ -1,6 +1,6 @@
 import { DEFAULTS } from "../../defaults";
 import { getErrorMessage } from "../../error-utils";
-import { telemetryLog } from "../../telemetry/log";
+import { debugLog } from "../../telemetry/log";
 import type { JsonPlusSerializer } from "../serializer";
 import { deserializeEmbedding } from "../similarity";
 import {
@@ -182,7 +182,7 @@ export const parseEmbedding = (
           : value
         : "<binary>";
     const errMsg = getErrorMessage(error);
-    telemetryLog(`Failed to parse embedding (${errMsg}): ${preview}`);
+    debugLog(`Failed to parse embedding (${errMsg}): ${preview}`);
     return undefined;
   }
 };

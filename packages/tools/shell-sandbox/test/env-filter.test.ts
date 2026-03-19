@@ -5,11 +5,13 @@ describe("env variable filtering", () => {
   let warnSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
+    process.env.OBSKU_DEBUG = "1";
     warnSpy = spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
     warnSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 
   test("blocks secret-like vars by default", async () => {

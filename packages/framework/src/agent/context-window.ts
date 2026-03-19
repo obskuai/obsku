@@ -42,7 +42,7 @@ import type { AgentEvent } from "../types/events/index";
 import type { Message } from "../types/llm";
 import type { LLMProvider } from "../types/providers";
 import { getErrorMessage } from "../utils";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 import { DefaultCompactionStrategy } from "./compaction";
 import { estimateMessageTokens } from "./token-estimation";
 import { pruneMessages } from "./prune";
@@ -207,7 +207,7 @@ export class ContextWindowManager {
     try {
       const compacted = await strategy.compact(messages, provider);
       const compactedTokens = estimateMessageTokens(compacted);
-      telemetryLog(
+      debugLog(
         `context_compaction_success: original=${messages.length} compacted=${compacted.length} tokens_saved=${originalTokens - compactedTokens}`
       );
       return {

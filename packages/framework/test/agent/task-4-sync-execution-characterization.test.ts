@@ -235,6 +235,7 @@ describe("sync execution characterization", () => {
 
   test("sync execution characterization logs bounded progress emit failures without changing tool result flow", async () => {
     const stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    process.env.OBSKU_DEBUG = "1";
     const progressPlugin: InternalPlugin = {
       description: "progress reporter",
       execute: (_input, onProgress) =>
@@ -271,9 +272,10 @@ describe("sync execution characterization", () => {
     expect(stderrSpy).toHaveBeenCalled();
     const logged = stderrSpy.mock.calls.map((call) => String(call[0])).join("\n");
     expect(logged).toContain(
-      "[obsku:telemetry] tool_progress_emit_error: tool=progress toolUseId=tu-progress error=emit failed"
+      "[obsku:debug] tool_progress_emit_error: tool=progress toolUseId=tu-progress error=emit failed"
     );
     expect(logged.length).toBeLessThan(350);
     stderrSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 });

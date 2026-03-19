@@ -145,6 +145,7 @@ describe("safeJsonParse", () => {
   test("extractJsonFromText warns when all JSON candidates fail", () => {
     const stderrChunks: Array<string> = [];
     const originalWrite = process.stderr.write.bind(process.stderr);
+    process.env.OBSKU_DEBUG = "1";
     process.stderr.write = (chunk: unknown) => {
       stderrChunks.push(String(chunk));
       return true;
@@ -157,6 +158,7 @@ describe("safeJsonParse", () => {
       expect(combined).toContain("{broken json}");
     } finally {
       process.stderr.write = originalWrite;
+      delete process.env.OBSKU_DEBUG;
     }
   });
 });

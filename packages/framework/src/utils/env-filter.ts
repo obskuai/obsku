@@ -97,7 +97,7 @@ export function filterEnvVars(
     }
   }
 
-  if (filtered.length > 0 && effectiveFilter.warn !== false) {
+  if (filtered.length > 0 && effectiveFilter.warn !== false && process.env.OBSKU_DEBUG) {
     console.warn(`[${contextName}] Filtered env vars: ${filtered.join(", ")}`);
   }
 

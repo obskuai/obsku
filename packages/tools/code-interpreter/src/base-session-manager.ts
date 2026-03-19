@@ -1,4 +1,4 @@
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework";
+import { DEFAULTS, getErrorMessage, debugLog } from "@obsku/framework";
 import { randomUUID } from "node:crypto";
 import { createErrorResult } from "./constants";
 import type { ExecutionOptions, ExecutionResult, SessionOptions, SupportedLanguage } from "./types";
@@ -109,7 +109,7 @@ export abstract class BaseSessionManager<
     try {
       await session.init;
     } catch (error: unknown) {
-      telemetryLog(`session init failed during destroy: ${error}`);
+      debugLog(`session init failed during destroy: ${error}`);
     }
 
     await this.terminateSession(session);

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "bun:test";
 import { codeInterpreter, LocalProcessExecutor, SessionManager } from "../src/index";
-import { filterEnvVars } from "../src/session-process";
+import { filterEnvVars } from "@obsku/framework";
 import { PathTraversalError } from "../src/workspace";
 
 const SECURITY_WARNING =
@@ -17,11 +17,13 @@ describe("Security: env variable filtering", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    process.env.OBSKU_DEBUG = "1";
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
     warnSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 
   test("blocks SECRET pattern by default", () => {

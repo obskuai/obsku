@@ -1,6 +1,6 @@
 import { DEFAULTS } from "./defaults";
 import { getErrorMessage } from "./error-utils";
-import { telemetryLog } from "./telemetry/log";
+import { debugLog } from "./telemetry/log";
 
 export type JsonParseResult<T = unknown> =
   | { data: T; error: undefined; success: true }
@@ -120,7 +120,7 @@ export function reportJsonExtractionFailure(
     return;
   }
 
-  telemetryLog(
+  debugLog(
     `extractJsonFromText: failed to parse JSON candidates. Failures: ${failures.length}, preview: ${text.trim().slice(0, DEFAULTS.preview.logPreviewLength)}`
   );
 }

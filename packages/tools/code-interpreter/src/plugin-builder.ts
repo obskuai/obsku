@@ -5,7 +5,7 @@
  * and AgentCore code interpreter wrappers, eliminating duplication.
  */
 
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
+import { getErrorMessage, plugin } from "@obsku/framework";
 
 import { z } from "zod";
 import { serializeExecutionResult } from "./serialization";

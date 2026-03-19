@@ -6,7 +6,7 @@ import type { HandoffTarget } from "../../handoff/types";
 
 import { ConfigService } from "../../services/config";
 import { EventBus } from "../../services/event-bus";
-import { telemetryLog } from "../../telemetry/log";
+import { debugLog } from "../../telemetry/log";
 import type {
   AgentDef,
   AgentEvent,
@@ -50,7 +50,7 @@ function setupEventBus() {
       Option.isSome(eventBusOption)
         ? eventBusOption.value.publish(event).pipe(
             Effect.catchAll((error) => {
-              telemetryLog(`Event bus publish failed for ${event.type}: ${String(error)}`);
+              debugLog(`Event bus publish failed for ${event.type}: ${String(error)}`);
               return Effect.succeed(false);
             })
           )

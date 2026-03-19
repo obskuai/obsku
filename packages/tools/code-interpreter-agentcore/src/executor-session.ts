@@ -3,7 +3,7 @@ import {
   StartCodeInterpreterSessionCommand,
   StopCodeInterpreterSessionCommand,
 } from "@aws-sdk/client-bedrock-agentcore";
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
+import { getErrorMessage, debugLog } from "@obsku/framework";
 import { rethrowStageError } from "./executor-stage-error";
 
 export async function startSession(
@@ -42,7 +42,7 @@ export async function stopSession(
     );
     return undefined;
   } catch (error: unknown) {
-    telemetryLog(`Session cleanup failed: ${error}`);
+    debugLog(`Session cleanup failed: ${error}`);
     return getErrorMessage(error);
   }
 }

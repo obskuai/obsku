@@ -1,7 +1,7 @@
 import { Context, Effect, Exit, Layer, PubSub, Queue, Scope } from "effect";
 import { DEFAULTS } from "../defaults";
 import { getErrorMessage } from "../error-utils";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 import type { AgentEvent } from "../types";
 
 export interface EventBusOptions {
@@ -102,7 +102,7 @@ function subscribeToAsyncIterable(
           try {
             yield await Effect.runPromise(Queue.take(subscription));
           } catch (error) {
-            telemetryLog(`eventbus_subscribe_error: ${getErrorMessage(error)}`);
+            debugLog(`eventbus_subscribe_error: ${getErrorMessage(error)}`);
             return;
           }
         }
@@ -164,7 +164,7 @@ export async function destroySessionEventBus(sessionId: string): Promise<boolean
   }
 
   const eventBus = await cached.catch((err) => {
-    telemetryLog(`EventBus init failed: ${getErrorMessage(err)}`);
+    debugLog(`EventBus init failed: ${getErrorMessage(err)}`);
     return undefined;
   });
   if (!eventBus) {

@@ -1,3 +1,4 @@
-export function telemetryLog(msg: string): void {
-  process.stderr.write(`[obsku:telemetry] ${msg}\n`);
+export function debugLog(msg: string): void {
+  if (!process.env.OBSKU_DEBUG) return;
+  process.stderr.write(`[obsku:debug] ${msg}\n`);
 }

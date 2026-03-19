@@ -135,10 +135,10 @@ describe("Checkpoint Error Classes", () => {
       expect(error.message).toBe("Checkpoint data is corrupted or invalid: invalid-json");
     });
 
-    it("should truncate data preview to 100 chars", () => {
-      const longData = "a".repeat(150);
+    it("should truncate data preview to 200 chars", () => {
+      const longData = "a".repeat(250);
       const error = new CheckpointCorruptionError(longData);
-      expect(error.message).toBe(`Checkpoint data is corrupted or invalid: ${"a".repeat(100)}...`);
+      expect(error.message).toBe(`Checkpoint data is corrupted or invalid: ${"a".repeat(200)}...`);
     });
 
     it("should include cause when provided", () => {

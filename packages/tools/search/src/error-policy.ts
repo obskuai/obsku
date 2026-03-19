@@ -5,7 +5,7 @@
  * - EACCES / EMFILE → log warning, continue traversal
  * - other   → surface to caller (unexpected; should not be swallowed)
  */
-import { telemetryLog } from "@obsku/framework";
+import { debugLog } from "@obsku/framework";
 
 export type IoErrorClass = "skip" | "warn" | "surface";
 
@@ -37,7 +37,7 @@ export function handleTraversalError<T>(
   if (cls === "warn") {
     const code = (error as { code: string }).code;
     // EACCES / EMFILE: permission or fd exhaustion — log and continue
-    telemetryLog(`[findFilesRecursive] Unexpected error in ${dirPath}: ${code}`);
+    debugLog(`[findFilesRecursive] Unexpected error in ${dirPath}: ${code}`);
     return collected;
   }
 

@@ -170,6 +170,7 @@ describe("executeMemoryLoad error handling", () => {
 
   it("logs and returns null when onHookError is log", async () => {
     const stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    process.env.OBSKU_DEBUG = "1";
     const store = createMockStore({
       listEntities: mock(() => Promise.reject(new Error("DB error"))),
     });
@@ -190,7 +191,7 @@ describe("executeMemoryLoad error handling", () => {
 
     expect(result).toBeNull();
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore();
+    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
   });
 
   it("ignores error and returns null when onHookError is ignore", async () => {
@@ -242,8 +243,9 @@ describe("executeMemoryLoad error handling", () => {
     expect(errorHandler).toHaveBeenCalledWith(expect.any(Error), "onMemoryLoad");
   });
 
-  it("logs to telemetryLog on error (silent catch logging)", async () => {
+  it("logs to debugLog on error (silent catch logging)", async () => {
     const stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    process.env.OBSKU_DEBUG = "1";
     const store = createMockStore({
       listEntities: mock(() => Promise.reject(new Error("DB error"))),
     });
@@ -262,14 +264,14 @@ describe("executeMemoryLoad error handling", () => {
 
     await executeMemoryLoad(config, ctx);
 
-    // Verify telemetryLog output (format: [obsku:telemetry] silent catch in memory hook ...)
+    // Verify debugLog output (format: [obsku:debug] ...)
     const calls = stderrSpy.mock.calls;
     const telemetryCall = calls.find((call: Array<unknown>) =>
-      String(call[0]).includes("[obsku:telemetry]")
+      String(call[0]).includes("[obsku:debug]")
     );
     expect(telemetryCall).toBeDefined();
     expect(String(telemetryCall![0])).toContain("onMemoryLoad");
-    stderrSpy.mockRestore();
+    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
   });
 });
 
@@ -443,6 +445,7 @@ describe("executeEntityExtract error handling", () => {
 
   it("returns empty array on error when onHookError is log", async () => {
     const stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    process.env.OBSKU_DEBUG = "1";
     const store = createMockStore();
     const provider: LLMProvider = {
       chat: mock(() => Promise.reject(new Error("LLM error"))),
@@ -466,7 +469,7 @@ describe("executeEntityExtract error handling", () => {
 
     expect(result).toEqual([]);
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore();
+    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
   });
 
   it("returns empty array without logging when onHookError is ignore", async () => {
@@ -651,6 +654,7 @@ describe("executeMemorySave error handling", () => {
 
   it("logs and continues on error when onHookError is log", async () => {
     const stderrSpy = spyOn(process.stderr, "write").mockImplementation(() => true);
+    process.env.OBSKU_DEBUG = "1";
     const store = createMockStore();
     const provider: LLMProvider = {
       chat: mock(() => Promise.reject(new Error("LLM error"))),
@@ -672,7 +676,7 @@ describe("executeMemorySave error handling", () => {
     await executeMemorySave(config, ctx, provider);
 
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore();
+    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
   });
 
   it("calls custom errorHandler on error", async () => {

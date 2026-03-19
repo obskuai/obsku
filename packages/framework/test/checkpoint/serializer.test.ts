@@ -114,8 +114,8 @@ describe("JsonPlusSerializer", () => {
       );
     });
 
-    test("should truncate data preview to 100 chars", () => {
-      const longInvalidData = "x".repeat(150);
+    test("should truncate data preview to 200 chars", () => {
+      const longInvalidData = "x".repeat(250);
       let thrownError: unknown;
       try {
         serializer.deserialize(longInvalidData);
@@ -123,7 +123,7 @@ describe("JsonPlusSerializer", () => {
         thrownError = error;
       }
       expect(thrownError).toBeInstanceOf(CheckpointCorruptionError);
-      expect((thrownError as CheckpointCorruptionError).message).toContain("x".repeat(100));
+      expect((thrownError as CheckpointCorruptionError).message).toContain("x".repeat(200));
       expect((thrownError as CheckpointCorruptionError).message).toContain("...");
     });
 

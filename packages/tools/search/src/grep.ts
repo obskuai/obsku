@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import type { ToolOutput } from "@obsku/framework";
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
+import { getErrorMessage, plugin } from "@obsku/framework";
 import { z } from "zod";
 import { escapeRegex, findFilesRecursive, validatePath } from "./utils";
 

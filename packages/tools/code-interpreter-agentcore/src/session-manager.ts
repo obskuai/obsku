@@ -6,7 +6,7 @@ import {
   StopCodeInterpreterSessionCommand,
   type ToolName,
 } from "@aws-sdk/client-bedrock-agentcore";
-import { DEFAULTS, MS_PER_SECOND } from "@obsku/framework";
+import { DEFAULTS } from "@obsku/framework";
 import type {
   BaseSessionRecord,
   ExecutionResult,
@@ -89,7 +89,7 @@ export class AgentCoreSessionManager extends BaseSessionManager<AgentCoreSession
   }
 
   protected async initializeSession(session: AgentCoreSessionRecord): Promise<void> {
-    const sessionTimeoutSeconds = Math.ceil(session.maxDurationMs / MS_PER_SECOND);
+    const sessionTimeoutSeconds = Math.ceil(session.maxDurationMs / DEFAULTS.msPerSecond);
     const response = await this.client.send(
       new StartCodeInterpreterSessionCommand({
         codeInterpreterIdentifier: session.codeInterpreterIdentifier,

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import type { TaskManager } from "../background";
 import { parseJson } from "../parse-contract";
 import type { InternalPlugin } from "../plugin";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 import type { ToolUseContent } from "../types";
 import { getErrorMessage } from "../utils";
 import type { ResolvedTool } from "./setup";
@@ -42,7 +42,7 @@ export function launchBackgroundTask(
       plugin.execute({ ...tc.input, wait: true }).pipe(
         Effect.catchAll((err) => {
           const error = getErrorMessage(err);
-          telemetryLog(`Background task execution failed for ${tc.name}: ${error}`);
+          debugLog(`Background task execution failed for ${tc.name}: ${error}`);
           return Effect.succeed({
             error,
           });
@@ -71,9 +71,7 @@ export function emitBackgroundStartEvents(
       const parsed = parseJson(result.result);
 
       if (!parsed.ok) {
-        yield* Effect.logWarning(
-          `Skipping background start event parse failure for ${toolName} (${toolUseId}): ${parsed.error}; raw=${parsed.raw}`
-        );
+        debugLog(`Skipping background start event parse failure for ${toolName} (${toolUseId}): ${parsed.error}; raw=${parsed.raw}`);
         yield* emit(
           createParseErrorEvent({
             error: parsed.error,
@@ -82,9 +80,10 @@ export function emitBackgroundStartEvents(
             toolUseId,
           })
         ).pipe(
-          Effect.catchAll((err) =>
-            Effect.logWarning(`Background start parse error emit failed: ${err}`)
-          )
+          Effect.catchAll((err) => {
+            debugLog(`Background start parse error emit failed: ${err}`);
+            return Effect.void;
+          })
         );
         continue;
       }
@@ -92,9 +91,7 @@ export function emitBackgroundStartEvents(
       const taskId = extractTaskId(parsed.value);
       if (!taskId) {
         const error = "Expected background start payload with string taskId";
-        yield* Effect.logWarning(
-          `Skipping background start event invalid payload for ${toolName} (${toolUseId}): ${error}; raw=${result.result}`
-        );
+        debugLog(`Skipping background start event invalid payload for ${toolName} (${toolUseId}): ${error}; raw=${result.result}`);
         yield* emit(
           createParseErrorEvent({
             error,
@@ -103,9 +100,10 @@ export function emitBackgroundStartEvents(
             toolUseId,
           })
         ).pipe(
-          Effect.catchAll((err) =>
-            Effect.logWarning(`Background start parse error emit failed: ${err}`)
-          )
+          Effect.catchAll((err) => {
+            debugLog(`Background start parse error emit failed: ${err}`);
+            return Effect.void;
+          })
         );
         continue;
       }

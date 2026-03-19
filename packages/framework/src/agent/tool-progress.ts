@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { DEFAULTS } from "../defaults";
-import { telemetryLog } from "../telemetry";
+import { debugLog } from "../telemetry";
 
 import type { AgentEvent, ToolUseContent } from "../types";
 import { getErrorMessage } from "../utils";
@@ -29,7 +29,7 @@ function makeToolProgressEvent(toolName: string, toolUseId: string, chunk: unkno
 }
 
 function logProgressEmitError(tc: Pick<ToolUseContent, "name" | "toolUseId">, err: unknown): void {
-  telemetryLog(
+  debugLog(
     `tool_progress_emit_error: tool=${tc.name} toolUseId=${tc.toolUseId} error=${getErrorMessage(err).slice(0, DEFAULTS.preview.logPreviewLength)}`
   );
 }

@@ -2,7 +2,7 @@ import { defaultOnEntityExtract } from "../memory/hooks/on-entity-extract";
 import { defaultOnMemoryLoad } from "../memory/hooks/on-memory-load";
 import { defaultOnMemorySave } from "../memory/hooks/on-memory-save";
 import type { Entity, MemoryHookContext, MemoryInjection } from "../memory/types";
-import { telemetryLog } from "../telemetry";
+import { debugLog } from "../telemetry";
 import type { LLMProvider, LLMResponse, Logger, MemoryConfig, Message } from "../types";
 
 type MemoryFeatureKey = "contextInjection" | "entityMemory" | "longTermMemory";
@@ -70,7 +70,7 @@ function applyMemoryErrorPolicy<T>({
       logger.error(msg);
     }
 
-    telemetryLog(
+    debugLog(
       `memory_hook_failed: ${hookName} (${normalizedError.name}): ${normalizedError.message}`
     );
 

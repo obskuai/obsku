@@ -142,11 +142,6 @@ describe("createCodeInterpreter auto-discovery", () => {
       expect(result.result).toContain("explicit wasm");
     });
 
-    test.skip("throws when explicit wasm backend not installed (monorepo limitation)", async () => {
-      const plugin = createCodeInterpreter({ backend: "wasm" });
-
-      await expect(runPlugin(plugin, { code: "test", language: "javascript" })).rejects.toThrow();
-    });
   });
 
   describe("createCodeInterpreter({ executor: mock }) bypass", () => {

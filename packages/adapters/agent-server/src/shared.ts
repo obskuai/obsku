@@ -1,5 +1,5 @@
 import type { AgentEvent, ConversationMessage, LLMProvider } from "@obsku/framework";
-import { MS_PER_SECOND } from "@obsku/framework";
+import { DEFAULTS } from "@obsku/framework";
 import { HTTP_STATUS, SSE_CACHE_CONTROL, SSE_CONNECTION, SSE_CONTENT_TYPE } from "./constants";
 
 export interface ServeOptions {
@@ -32,7 +32,7 @@ export interface SSEMessageOptions {
 export function createHealthHandler(): Response {
   return Response.json({
     status: "Healthy",
-    time_of_last_update: Math.floor(Date.now() / MS_PER_SECOND),
+    time_of_last_update: Math.floor(Date.now() / DEFAULTS.msPerSecond),
   });
 }
 

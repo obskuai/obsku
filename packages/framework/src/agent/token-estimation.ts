@@ -1,5 +1,5 @@
 import type { ContentBlock, Message } from "../types/llm";
-import { telemetryLog } from "../telemetry/log";
+import { debugLog } from "../telemetry/log";
 
 /**
  * Characters per token heuristic (OpenCode pattern).
@@ -48,7 +48,7 @@ function estimateContentBlockTokens(block: ContentBlock): number {
     case "tool_result":
       return estimateTokens(block.content);
     default:
-      telemetryLog(`unknown_content_block_type: type=${(block as { type: string }).type}`);
+      debugLog(`unknown_content_block_type: type=${(block as { type: string }).type}`);
       return 0;
   }
 }

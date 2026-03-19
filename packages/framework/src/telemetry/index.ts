@@ -1,4 +1,4 @@
-export { telemetryLog } from "./log";
+export { debugLog } from "./log";
 export type { SpanRecord } from "./tracer";
 export {
   _resetOtelLoader,

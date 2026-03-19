@@ -2,7 +2,7 @@ import type { TaskManager } from "../background";
 import type { BlobStore } from "../blob/types";
 import { DEFAULTS } from "../defaults";
 import { getErrorMessage } from "../error-utils";
-import { telemetryLog } from "../telemetry";
+import { debugLog } from "../telemetry";
 import type { Logger, Message, PluginTruncationConfig, TextContent } from "../types";
 import { BlockType, MessageRole } from "../types/constants";
 import type { ResolvedTruncation } from "./truncation-resolve";
@@ -82,7 +82,7 @@ export async function truncateToolResult(
       if (logger) {
         logger.error(msg);
       } else {
-        telemetryLog(msg);
+        debugLog(msg);
       }
     }
   }

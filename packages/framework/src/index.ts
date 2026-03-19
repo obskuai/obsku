@@ -273,7 +273,7 @@ export {
   addSpanAttributes,
   clearRecordedSpans,
   getRecordedSpans,
-  telemetryLog,
+  debugLog,
   withSpan,
 } from "./telemetry";
 export {

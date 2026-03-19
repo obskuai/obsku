@@ -1,7 +1,7 @@
 import type { ExecutionResult } from "@obsku/tool-code-interpreter";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
+import { getErrorMessage, debugLog } from "@obsku/framework";
 
 export interface S3UploadConfig {
   /** S3 bucket name */
@@ -67,7 +67,7 @@ export class S3Uploader {
           await this.uploadBuffer(file.content, key);
         } else {
           // If no content buffer, we can't upload (file wasn't fetched)
-          telemetryLog(`s3_upload_skip: file=${filename} reason=no_content`);
+          debugLog(`s3_upload_skip: file=${filename} reason=no_content`);
           continue;
         }
 
@@ -77,14 +77,14 @@ export class S3Uploader {
           url: this.buildUrl(key),
         });
 
-        telemetryLog(`s3_upload_success: file=${filename} key=${key}`);
+        debugLog(`s3_upload_success: file=${filename} key=${key}`);
       } catch (error: unknown) {
         const errorMsg = getErrorMessage(error);
         throw new Error(`S3 upload failed for ${filename}: ${errorMsg}`);
       }
     }
 
-    telemetryLog(`s3_upload_complete: files=${results.length} session=${sessionId}`);
+    debugLog(`s3_upload_complete: files=${results.length} session=${sessionId}`);
     return results;
   }
 
@@ -123,7 +123,7 @@ export class S3Uploader {
     const files = Array.from(result.outputFiles?.entries() ?? []).map(([path, content]) => ({ content, path }));
     try {
       const uploadResults = await this.upload(files, result.stdout, sessionId);
-      telemetryLog(`s3_upload_summary: session=${sessionId} files=${uploadResults.length}`);
+      debugLog(`s3_upload_summary: session=${sessionId} files=${uploadResults.length}`);
       const s3Urls = uploadResults
         .filter((u) => u.localPath !== "stdout")
         .map((u) => `  - ${u.localPath}: ${u.url}`)
@@ -136,7 +136,7 @@ export class S3Uploader {
       };
     } catch (error: unknown) {
       const errorMsg = getErrorMessage(error);
-      telemetryLog(`s3_upload_failed: session=${sessionId} error=${errorMsg}`);
+      debugLog(`s3_upload_failed: session=${sessionId} error=${errorMsg}`);
       return { ...result, stdout: result.stdout + `\n\n[S3 Upload Error] ${errorMsg}` };
     }
   }

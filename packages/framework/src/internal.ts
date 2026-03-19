@@ -120,7 +120,7 @@ export {
 export { generateId } from "./id-utils";
 export type { JsonParseResult } from "./json-utils";
 export { extractJsonFromText, safeJsonParse } from "./json-utils";
-export { telemetryLog } from "./telemetry/log";
+export { debugLog } from "./telemetry/log";
 export type { ToolResultEnvelope } from "./tool-result-utils";
 export {
   isToolOutput,
