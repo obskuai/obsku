@@ -1,5 +1,5 @@
 import type { McpCallToolResult, McpProvider, ToolDef } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { McpConfigError, McpSdkLoadError } from "./errors";
 import type { McpServerConfig } from "./types";
 
@@ -31,7 +31,7 @@ async function loadMcpSdk(): Promise<McpSdkModule> {
     const mod = await import("@modelcontextprotocol/sdk" as string);
     return mod as McpSdkModule;
   } catch (error: unknown) {
-    throw new McpSdkLoadError(formatError(error));
+    throw new McpSdkLoadError(getErrorMessage(error));
   }
 }
 

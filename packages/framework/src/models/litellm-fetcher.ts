@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { DEFAULTS } from "../defaults";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 
 export interface LiteLLMModelEntry {
   litellm_provider?: string;
@@ -45,7 +45,7 @@ export async function fetchLiteLLMModels(
     }
     return { data: parsed.data, ok: true };
   } catch (error: unknown) {
-    return { error: formatError(error), ok: false, reason: "network" };
+    return { error: getErrorMessage(error), ok: false, reason: "network" };
   } finally {
     clearTimeout(timeoutId);
   }

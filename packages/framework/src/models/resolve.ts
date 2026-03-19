@@ -1,5 +1,5 @@
 import { telemetryLog } from "../telemetry/log";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import type { ModelRegistry } from "./registry";
 
 /**
@@ -20,7 +20,7 @@ export async function resolveModelConfig(
   }
 
   const registryInfo = await registry.resolve(model).catch((error) => {
-    telemetryLog(`ModelRegistry resolve failed for ${model}: ${formatError(error)}`);
+    telemetryLog(`ModelRegistry resolve failed for ${model}: ${getErrorMessage(error)}`);
     return undefined;
   });
 

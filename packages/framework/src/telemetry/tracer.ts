@@ -1,5 +1,5 @@
 import { getErrorMessage, getErrorStack } from "../error-utils";
-import { formatError } from "../utils";
+import { telemetryLog } from "./log";
 import { telemetryLog } from "./log";
 import type { GenAiAttributes, TelemetryConfig } from "./types";
 
@@ -148,7 +148,7 @@ export async function withSpan<T>(
     } catch (error: unknown) {
       span.setStatus({
         code: otel.SpanStatusCode.ERROR,
-        message: formatError(error),
+        message: getErrorMessage(error),
       });
       record.status = "error";
       throw error;

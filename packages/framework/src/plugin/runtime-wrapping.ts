@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { Effect } from "effect";
-import { formatError, isAsyncIterable, toToolResultOutput } from "../utils";
+import { getErrorMessage, isAsyncIterable, toToolResultOutput } from "../utils";
 
 // Error Pattern Convention:
 // - Public/consumer errors: extends Error + readonly _tag (e.g. PluginExecError, RemoteAgentError)
@@ -17,7 +17,7 @@ export class PluginExecError extends Error {
     readonly pluginName: string,
     readonly cause: unknown
   ) {
-    super(`Plugin "${pluginName}" failed: ${formatError(cause)}`);
+    super(`Plugin "${pluginName}" failed: ${getErrorMessage(cause)}`);
     this.name = "PluginExecError";
   }
 }

@@ -1,5 +1,5 @@
 import type { ZodType } from "zod";
-import { formatError } from "./utils";
+import { getErrorMessage } from "./utils";
 
 export type ParseSuccess<T> = { ok: true; value: T };
 export type ParseJsonFailure = { error: string; ok: false; raw: string };
@@ -15,7 +15,7 @@ export function parseJson(raw: string): ParseSuccess<unknown> | ParseJsonFailure
   try {
     return { ok: true, value: JSON.parse(raw) };
   } catch (error: unknown) {
-    return { error: formatError(error), ok: false, raw };
+    return { error: getErrorMessage(error), ok: false, raw };
   }
 }
 

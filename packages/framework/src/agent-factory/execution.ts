@@ -7,7 +7,7 @@ import { DEFAULTS } from "../defaults";
 import type { InternalPlugin } from "../plugin/index";
 import { paramDefToZod } from "../plugin/index";
 import type { AgentDef, LLMProvider, PluginDef, PluginRunOutput, ToolDef } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { checkDepthLimit, getCurrentDepth, runWithDepth } from "./depth";
 import { requireBoundAgentFactoryContext } from "./validation";
 
@@ -95,7 +95,7 @@ export async function callRegisteredAgent(
       agent(agentEntry.def).run(task, agentEntry.provider)
     );
   } catch (error: unknown) {
-    return JSON.stringify({ error: formatError(error), cause: formatError(error) });
+    return JSON.stringify({ error: getErrorMessage(error), cause: getErrorMessage(error) });
   }
 }
 
@@ -120,7 +120,7 @@ export async function executeEphemeralAgent(input: {
       agent(childDef).run(input.task, input.provider)
     );
   } catch (error: unknown) {
-    return JSON.stringify({ error: formatError(error), cause: formatError(error) });
+    return JSON.stringify({ error: getErrorMessage(error), cause: getErrorMessage(error) });
   }
 }
 

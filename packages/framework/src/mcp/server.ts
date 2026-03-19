@@ -2,7 +2,7 @@ import { z } from "zod";
 import { DEFAULTS } from "../defaults";
 import type { JsonSchema } from "../types/json-schema";
 import type { PluginCtx, PluginDef } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import { McpSdkLoadError } from "./errors";
 import type { McpHostServerConfig } from "./types";
 
@@ -36,7 +36,7 @@ async function loadMcpServerSdk(): Promise<McpServerSdkModule> {
     const mod = await import("@modelcontextprotocol/sdk" as string);
     return mod as McpServerSdkModule;
   } catch (error: unknown) {
-    throw new McpSdkLoadError(formatError(error));
+    throw new McpSdkLoadError(getErrorMessage(error));
   }
 }
 
