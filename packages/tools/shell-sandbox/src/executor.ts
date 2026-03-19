@@ -1,4 +1,4 @@
-import { DEFAULTS, filterEnvVars, formatError } from "@obsku/framework";
+import { DEFAULTS, filterEnvVars, getErrorMessage } from "@obsku/framework";
 import { Bash, type IFileSystem, InMemoryFs, type NetworkConfig, OverlayFs } from "just-bash";
 import type {
   SandboxedShellExecutor as SandboxedShellExecutorContract,
@@ -14,7 +14,7 @@ const TIMEOUT_EXIT_CODE = -1;
 function normalizeExecutionError(error: unknown): ShellExecutionResult {
   return {
     exitCode: 1,
-    stderr: formatError(error),
+    stderr: getErrorMessage(error),
     stdout: "",
     timedOut: false,
   };
