@@ -1,10 +1,9 @@
 import { Effect } from "effect";
-import { LOG_PREVIEW_MAX_LENGTH } from "../constants";
+import { DEFAULTS } from "../defaults";
 import type { ObskuConfig } from "../services/config";
 import { telemetryLog } from "../telemetry";
-
 import type { Message, ToolUseContent } from "../types";
-import { formatError, normalizeToolResultPayload, toToolResultOutput } from "../utils";
+import { getErrorMessage, normalizeToolResultPayload, toToolResultOutput } from "../utils";
 import {
   createToolExecutionResult,
   makeErrorEnvelope,
@@ -36,9 +35,9 @@ export function buildSingleToolEffect<E>(
       return injected.length > 0 ? { ...base, injectedMessages: injected } : base;
     }),
     Effect.catchAll((err) => {
-      const errorMsg = formatError(err);
+      const errorMsg = getErrorMessage(err);
       telemetryLog(
-        `plugin_execution_error: plugin=${tc.name} error=${errorMsg.slice(0, LOG_PREVIEW_MAX_LENGTH)}`
+        `plugin_execution_error: plugin=${tc.name} error=${errorMsg.slice(0, DEFAULTS.preview.logPreviewLength)}`
       );
       return Effect.succeed(createToolExecutionResult(tc, makeErrorEnvelope(errorMsg), true));
     })

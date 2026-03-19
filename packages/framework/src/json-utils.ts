@@ -1,5 +1,5 @@
-import { LOG_PREVIEW_MAX_LENGTH } from "./constants";
-import { formatError } from "./generic-utils";
+import { DEFAULTS } from "./defaults";
+import { getErrorMessage } from "./error-utils";
 import { telemetryLog } from "./telemetry/log";
 
 export type JsonParseResult<T = unknown> =
@@ -121,7 +121,7 @@ export function reportJsonExtractionFailure(
   }
 
   telemetryLog(
-    `extractJsonFromText: failed to parse JSON candidates. Failures: ${failures.length}, preview: ${text.trim().slice(0, LOG_PREVIEW_MAX_LENGTH)}`
+    `extractJsonFromText: failed to parse JSON candidates. Failures: ${failures.length}, preview: ${text.trim().slice(0, DEFAULTS.preview.logPreviewLength)}`
   );
 }
 
@@ -154,6 +154,6 @@ export function safeJsonParse<T = unknown>(value: string, validate?: (v: unknown
     const data = validate ? validate(parsed) : (parsed as T);
     return { data, error: undefined, success: true };
   } catch (error: unknown) {
-    return { data: value, error: formatError(error), success: false };
+    return { data: value, error: getErrorMessage(error), success: false };
   }
 }

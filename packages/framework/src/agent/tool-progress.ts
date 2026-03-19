@@ -1,9 +1,9 @@
 import { Effect } from "effect";
-import { LOG_PREVIEW_MAX_LENGTH } from "../constants";
+import { DEFAULTS } from "../defaults";
 import { telemetryLog } from "../telemetry";
 
 import type { AgentEvent, ToolUseContent } from "../types";
-import { formatError } from "../utils";
+import { getErrorMessage } from "../utils";
 import type { EmitFn } from "./tool-execution-shared";
 
 function makeToolProgressEvent(toolName: string, toolUseId: string, chunk: unknown): AgentEvent {
@@ -11,18 +11,18 @@ function makeToolProgressEvent(toolName: string, toolUseId: string, chunk: unkno
   if (typeof chunk === "number") return { ...base, percent: chunk };
   if (typeof chunk === "string") return { ...base, message: chunk };
   if (typeof chunk === "object" && chunk !== null) {
-    const c = chunk as Record<string, unknown>;
+    const record = chunk as Record<string, unknown>;
     return {
       ...base,
-      current: typeof c.current === "number" ? c.current : undefined,
-      message: typeof c.message === "string" ? c.message : undefined,
-      percent: typeof c.percent === "number" ? c.percent : undefined,
-      stage: typeof c.stage === "string" ? c.stage : undefined,
+      current: typeof record.current === "number" ? record.current : undefined,
+      message: typeof record.message === "string" ? record.message : undefined,
+      percent: typeof record.percent === "number" ? record.percent : undefined,
+      stage: typeof record.stage === "string" ? record.stage : undefined,
       status:
-        c.status === "completed" || c.status === "running" || c.status === "waiting"
-          ? (c.status as "completed" | "running" | "waiting")
+        record.status === "completed" || record.status === "running" || record.status === "waiting"
+          ? (record.status as "completed" | "running" | "waiting")
           : undefined,
-      total: typeof c.total === "number" ? c.total : undefined,
+      total: typeof record.total === "number" ? record.total : undefined,
     };
   }
   return base;
@@ -30,7 +30,7 @@ function makeToolProgressEvent(toolName: string, toolUseId: string, chunk: unkno
 
 function logProgressEmitError(tc: Pick<ToolUseContent, "name" | "toolUseId">, err: unknown): void {
   telemetryLog(
-    `tool_progress_emit_error: tool=${tc.name} toolUseId=${tc.toolUseId} error=${formatError(err).slice(0, LOG_PREVIEW_MAX_LENGTH)}`
+    `tool_progress_emit_error: tool=${tc.name} toolUseId=${tc.toolUseId} error=${getErrorMessage(err).slice(0, DEFAULTS.preview.logPreviewLength)}`
   );
 }
 

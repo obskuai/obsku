@@ -7,6 +7,15 @@
  * All timeout magic numbers should reference these constants.
  */
 export const DEFAULTS = {
+  /** Milliseconds per second - for converting between ms and seconds */
+  msPerSecond: 1000,
+
+  /** Default thinking budget tokens for LLM providers that support extended thinking (4096) */
+  thinkingBudgetTokens: 4096,
+
+  /** Tokens to reserve for output in context window management (4096) */
+  reserveOutputTokens: 4096,
+
   eventBusCapacity: 1024,
   /** Tool execution timeout (30 seconds) */
   toolTimeout: 30_000,
@@ -118,8 +127,8 @@ export const DEFAULTS = {
 
   /** Preview truncation defaults for logging */
   preview: {
-    /** Length for log message previews (100 characters) */
-    logPreviewLength: 100,
+    /** Length for log message previews (200 characters) */
+    logPreviewLength: 200,
     /** Length for Redis log previews (200 characters) */
     redisLogPreviewLength: 200,
     /** Length for short ID generation (8 characters) */
