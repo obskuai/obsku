@@ -1,6 +1,6 @@
 import { basename, relative } from "node:path";
 import type { ToolOutput } from "@obsku/framework";
-import { formatError, plugin } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
 import { z } from "zod";
 import { globFiles, validatePath } from "./utils";
 import { DEFAULT_MAX_RESULTS } from "./grep";
@@ -45,7 +45,7 @@ export const glob = (basePath: string) =>
           truncated,
         } satisfies GlobResult;
       } catch (error: unknown) {
-        const errorMessage = formatError(error);
+        const errorMessage = getErrorMessage(error);
         const errorOutput: ToolOutput = {
           content: `Permission error accessing directory: ${errorMessage}`,
           isError: true,

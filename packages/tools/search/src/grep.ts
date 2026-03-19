@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import type { ToolOutput } from "@obsku/framework";
-import { formatError, plugin } from "@obsku/framework";
+import { $$$, getErrorMessage, $$$ } from "@obsku/framework"
 import { z } from "zod";
 import { escapeRegex, findFilesRecursive, validatePath } from "./utils";
 
@@ -54,7 +54,7 @@ export const grep = (basePath: string) =>
           ? new RegExp(searchPattern, "g")
           : new RegExp(escapeRegex(searchPattern), "g");
       } catch (error: unknown) {
-        const errorMessage = formatError(error);
+        const errorMessage = getErrorMessage(error);
         const errorOutput: ToolOutput = {
           content: `Invalid regex pattern: ${errorMessage}`,
           isError: true,
