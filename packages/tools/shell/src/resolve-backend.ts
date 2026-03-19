@@ -25,13 +25,11 @@ export async function resolveShellBackend(
 
   if (explicit !== undefined) {
     if (explicit === "local") {
-      console.debug("[obsku:shell] backend: %s", "local");
       return "local";
     }
     // explicit === "sandbox" — verify it's installed
     try {
       await loadSandboxModule();
-      console.debug("[obsku:shell] backend: %s", "sandbox");
       return "sandbox";
     } catch {
       throw new Error("@obsku/tool-shell-sandbox is not installed");
@@ -41,10 +39,8 @@ export async function resolveShellBackend(
   // Auto-discovery: try sandbox first, fallback to local
   try {
     await loadSandboxModule();
-    console.debug("[obsku:shell] backend: %s", "sandbox");
     return "sandbox";
   } catch {
-    console.debug("[obsku:shell] backend: %s", "local");
     return "local";
   }
 }

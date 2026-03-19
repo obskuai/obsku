@@ -1,12 +1,9 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import {
   loadSandboxExecutor,
   resolveShellBackend,
   type SandboxModule,
 } from "../src/resolve-backend";
-
-const originalConsoleDebug = console.debug;
-let debugLogs: string[] = [];
 
 function createFakeSandboxModule(): SandboxModule {
   return {
@@ -23,18 +20,6 @@ function createFakeSandboxModule(): SandboxModule {
 }
 
 describe("resolve-backend", () => {
-  beforeEach(() => {
-    debugLogs = [];
-    console.debug = mock((...args: unknown[]) => {
-      debugLogs.push(args.map(String).join(" "));
-    });
-  });
-
-  afterEach(() => {
-    console.debug = originalConsoleDebug;
-    mock.restore();
-  });
-
   describe("resolveShellBackend", () => {
     describe("explicit local", () => {
       test("explicit 'local' always returns 'local' without importing sandbox", async () => {
@@ -44,12 +29,6 @@ describe("resolve-backend", () => {
 
         expect(result).toBe("local");
         expect(loadSandboxModule).not.toHaveBeenCalled();
-      });
-
-      test("explicit 'local' emits debug log", async () => {
-        await resolveShellBackend("local");
-
-        expect(debugLogs.some((log) => log.includes("local"))).toBe(true);
       });
     });
 
@@ -70,14 +49,6 @@ describe("resolve-backend", () => {
 
         expect(result).toBe("sandbox");
         expect(loadSandboxModule).toHaveBeenCalledTimes(1);
-      });
-
-      test("emits debug log with 'sandbox' backend", async () => {
-        await resolveShellBackend(undefined, {
-          loadSandboxModule: async () => createFakeSandboxModule(),
-        });
-
-        expect(debugLogs.some((log) => log.includes("sandbox"))).toBe(true);
       });
 
       test("auto-discovery falls back to 'local' when loader fails", async () => {

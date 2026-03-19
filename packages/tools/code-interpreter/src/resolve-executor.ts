@@ -96,20 +96,17 @@ async function resolveExplicit(
         codeInterpreterIdentifier,
         client
       );
-      console.debug("[obsku:code-interpreter] backend: %s", backend);
       return { backend, executor, sessionManager };
     }
     case "wasm": {
       const mod = await resolvedDeps.loadWasmModule();
       const executor = new mod.WasmExecutor();
       const sessionManager = new SessionManager();
-      console.debug("[obsku:code-interpreter] backend: %s", backend);
       return { backend, executor, sessionManager };
     }
     case "local": {
       const executor = new LocalProcessExecutor();
       const sessionManager = new SessionManager();
-      console.debug("[obsku:code-interpreter] backend: %s", backend);
       return { backend, executor, sessionManager };
     }
     default: {
@@ -137,9 +134,6 @@ async function resolveAuto(
     await resolvedDeps.loadAgentcoreModule();
     const region = agentcoreOpts?.region ?? resolvedDeps.getRegion();
     if (!region) {
-      console.debug(
-        "[obsku:code-interpreter] agentcore installed but AWS_REGION not set, skipping"
-      );
     } else {
       return resolveExplicit("agentcore", agentcoreOpts, resolvedDeps);
     }

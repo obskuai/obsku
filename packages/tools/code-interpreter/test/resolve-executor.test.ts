@@ -142,29 +142,6 @@ describe("resolveCodeExecutor", () => {
     });
   });
 
-  describe("debug logging", () => {
-    test("logs selected backend with console.debug", async () => {
-      const debugSpy = mock(() => {});
-      const originalDebug = console.debug;
-      console.debug = debugSpy;
-
-      try {
-        await resolveCodeExecutor("local");
-
-        expect(debugSpy).toHaveBeenCalled();
-        const calls = debugSpy.mock.calls;
-        const backendLogCall = calls.find(
-          (call: unknown[]) =>
-            Array.isArray(call) &&
-            call.some((arg) => typeof arg === "string" && arg.includes("code-interpreter"))
-        );
-        expect(backendLogCall).toBeDefined();
-      } finally {
-        console.debug = originalDebug;
-      }
-    });
-  });
-
   describe("ResolvedCodeExecutor structure", () => {
     test("returns backend, executor, and sessionManager", async () => {
       const result = await resolveCodeExecutor("local");
