@@ -2,7 +2,8 @@ import { spawn } from "node:child_process";
 import { assertNever, DEFAULTS } from "@obsku/framework";
 import { MAX_INPUT_FILE_BYTES, MAX_TOTAL_OUTPUT_BYTES } from "./constants";
 import { SessionManager } from "./session-manager";
-import { type EnvFilterOptions, filterEnvVars, killProcessTree } from "./session-process";
+import { type EnvFilterOptions, filterEnvVars } from "@obsku/framework";
+import { killProcessTree } from "./session-process";
 import type {
   CodeExecutor,
   ExecutionOptions,

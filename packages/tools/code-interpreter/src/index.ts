@@ -6,14 +6,15 @@ export { serializeExecutionResult } from "./serialization";
  * Foundation for executing code in isolated environments.
  */
 
+import { DEFAULTS } from "@obsku/framework";
 import { buildCodeInterpreterPlugin } from "./plugin-builder";
 
 export type { InputFilesRecord, InputFilesValue } from "./plugin-builder";
 
 import { LocalProcessExecutor } from "./local-executor";
-import type { EnvFilterOptions } from "./session-process";
+import type { EnvFilterOptions } from "@obsku/framework";
 
-export type { EnvFilterOptions } from "./session-process";
+export type { EnvFilterOptions } from "@obsku/framework";
 
 import { SessionManager } from "./session-manager";
 import type { CodeExecutor, ExecutionOptions, ExecutionResult } from "./types";
@@ -22,13 +23,16 @@ export type { BaseSessionRecord } from "./base-session-manager";
 export { BaseSessionManager } from "./base-session-manager";
 export {
   createErrorResult,
-  DEFAULT_IDLE_TIMEOUT_MS,
-  DEFAULT_MAX_DURATION_MS,
   DEFAULT_MAX_SESSIONS,
-  DEFAULT_TIMEOUT_MS,
   MAX_INPUT_FILE_BYTES,
   MAX_TOTAL_OUTPUT_BYTES,
 } from "./constants";
+
+// Re-export timeout constants from framework DEFAULTS for backward compatibility
+export const DEFAULT_TIMEOUT_MS = DEFAULTS.codeInterpreterExecTimeout;
+export const DEFAULT_MAX_DURATION_MS = DEFAULTS.codeInterpreterMaxDuration;
+export const DEFAULT_IDLE_TIMEOUT_MS = DEFAULTS.codeInterpreterIdleTimeout;
+
 export { LocalProcessExecutor } from "./local-executor";
 // Re-export auto-discovery types
 export type { CodeInterpreterBackend, ResolvedCodeExecutor } from "./resolve-executor";

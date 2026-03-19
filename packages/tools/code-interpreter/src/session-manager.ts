@@ -14,7 +14,7 @@ import {
   type SessionLanguage,
   type UserCodeOutcome,
 } from "./session-payload";
-import type { EnvFilterOptions } from "./session-process";
+import type { EnvFilterOptions } from "@obsku/framework";
 import { spawnSessionProcess, terminateProcess } from "./session-process";
 import { readUntilDelimiter as readProcessUntilDelimiter } from "./session-stream-reader";
 import type { ExecutionResult } from "./types";
