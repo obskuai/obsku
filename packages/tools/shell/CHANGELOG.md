@@ -1,5 +1,13 @@
 # @obsku/tool-shell
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [ed41827]
+  - @obsku/framework@0.2.2
+  - @obsku/tool-shell-sandbox@0.2.2
+
 ## 1.0.1
 
 ### Patch Changes

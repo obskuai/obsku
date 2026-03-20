@@ -1,5 +1,13 @@
 # @obsku/tool-code-interpreter-wasm
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [ed41827]
+  - @obsku/framework@0.2.2
+  - @obsku/tool-code-interpreter@1.0.2
+
 ## 0.2.1
 
 ### Patch Changes

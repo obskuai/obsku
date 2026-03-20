@@ -1,6 +1,6 @@
 {
   "name": "@obsku/provider-ai-sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "AI SDK provider adapter for @obsku/framework",
   "keywords": [
     "obsku",
