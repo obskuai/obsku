@@ -1,5 +1,11 @@
 # @obsku/adapter-agent-server
 
+## 0.2.4
+
+### Patch Changes
+
+- a7d7af5: Restore single-message Strands SSE streaming around tool execution for the agentcore protocol.
+
 ## 0.2.3
 
 ### Patch Changes
