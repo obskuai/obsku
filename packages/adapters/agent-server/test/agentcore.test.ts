@@ -420,8 +420,16 @@ describe("AgentCore protocol via serve()", () => {
         },
       });
 
-      const last = events.at(-1)!;
-      expect(last.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+      expect(events.at(-2)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+      expect(events.at(-1)!.event).toEqual({
+        metadata: {
+          usage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          },
+        },
+      });
     });
   });
 
@@ -449,7 +457,7 @@ describe("AgentCore protocol via serve()", () => {
       const events = await parseSSE(res);
       expect(events).toHaveLength(7);
       expect(events[0].event).toEqual({ messageStart: { role: "assistant" } });
-      expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+      expect(events.at(-2)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
     });
   });
 
@@ -473,7 +481,7 @@ describe("AgentCore protocol via serve()", () => {
 
         expect(res.status).toBe(200);
         const events = await parseSSE(res);
-        expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+        expect(events.at(-2)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
 
         expect(historyAgent.capturedMessages).toBeDefined();
         expect(historyAgent.capturedMessages).toHaveLength(2);
@@ -656,7 +664,7 @@ describe("AgentCore protocol via serve()", () => {
 
       const events = await parseSSE(res);
       expect(events[0].event).toEqual({ messageStart: { role: "assistant" } });
-      expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+      expect(events.at(-2)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
 
       const chunks = extractChunkTexts(events);
       expect(chunks).toEqual(["Hello ", "world!"]);
@@ -774,8 +782,23 @@ describe("AgentCore protocol via serve()", () => {
               },
             },
           },
+          {
+            event: {
+              contentBlockDelta: {
+                contentBlockIndex: 0,
+                delta: { text: "\n[Error: agent exploded]" },
+              },
+            },
+          },
           { event: { contentBlockStop: { contentBlockIndex: 0 } } },
           { event: { messageStop: { stopReason: "error" } } },
+          {
+            event: {
+              metadata: {
+                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+              },
+            },
+          },
         ]);
       } finally {
         server.stop();
@@ -837,7 +860,7 @@ describe("AgentCore protocol via serve()", () => {
             },
           },
         ]);
-        expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
+        expect(events.at(-2)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
       } finally {
         server.stop();
       }
@@ -947,7 +970,7 @@ describe("AgentCore protocol via serve()", () => {
       }
     });
 
-    it("closes stream after final messageStop event", async () => {
+    it("closes stream after final metadata event", async () => {
       const server = serve(createMockAgent(), mockProvider, { port: 0, protocol: "agentcore" });
 
       try {
@@ -963,7 +986,10 @@ describe("AgentCore protocol via serve()", () => {
         expect(text).not.toContain("session.end");
         const blocks = text.trim().split("\n\n");
         expect(blocks).toHaveLength(7);
-        expect(blocks.at(-1)).toBe('data: {"event":{"messageStop":{"stopReason":"end_turn"}}}');
+        expect(blocks.at(-2)).toBe('data: {"event":{"messageStop":{"stopReason":"end_turn"}}}');
+        expect(blocks.at(-1)).toBe(
+          'data: {"event":{"metadata":{"usage":{"inputTokens":10,"outputTokens":5,"totalTokens":15}}}}'
+        );
       } finally {
         server.stop();
       }
@@ -989,6 +1015,7 @@ describe("AgentCore protocol via serve()", () => {
           "contentBlockDelta",
           "contentBlockStop",
           "messageStop",
+          "metadata",
         ]);
         expect(JSON.stringify(events)).not.toContain("turn-123");
       } finally {

@@ -560,6 +560,7 @@ describe("AgentCore Protocol Characterization", () => {
           "contentBlockDelta",
           "contentBlockStop",
           "messageStop",
+          "metadata",
         ]);
 
         expect(getStrandsEventPayload(events[2]!, "contentBlockDelta")?.delta).toEqual({
@@ -600,6 +601,7 @@ describe("AgentCore Protocol Characterization", () => {
           "contentBlockDelta",
           "contentBlockStop",
           "messageStop",
+          "metadata",
         ]);
         expect(getStrandsEventPayload(events[0]!, "messageStart")).toEqual({ role: "assistant" });
         expect(getStrandsEventPayload(events[5]!, "messageStop")).toEqual({
@@ -624,8 +626,8 @@ describe("AgentCore Protocol Characterization", () => {
         });
 
         const events = await parseAgentCoreSSE(res);
-        expect(getStrandsEventName(events.at(-1)!)).toBe("messageStop");
-        expect(getStrandsEventPayload(events.at(-1)!, "messageStop")).toEqual({
+        expect(getStrandsEventName(events.at(-2)!)).toBe("messageStop");
+        expect(getStrandsEventPayload(events.at(-2)!, "messageStop")).toEqual({
           stopReason: "end_turn",
         });
       } finally {
@@ -679,10 +681,12 @@ describe("AgentCore Protocol Characterization", () => {
           "messageStart",
           "contentBlockStart",
           "contentBlockDelta",
+          "contentBlockDelta",
           "contentBlockStop",
           "messageStop",
+          "metadata",
         ]);
-        expect(getStrandsEventPayload(events[4]!, "messageStop")).toEqual({
+        expect(getStrandsEventPayload(events[5]!, "messageStop")).toEqual({
           stopReason: "error",
         });
       } finally {
