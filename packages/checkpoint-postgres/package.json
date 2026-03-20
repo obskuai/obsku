@@ -1,6 +1,6 @@
 {
   "name": "@obsku/checkpoint-postgres",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "PostgreSQL checkpoint storage backend for @obsku/framework",
   "keywords": [
     "obsku",

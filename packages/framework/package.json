@@ -1,6 +1,6 @@
 {
   "name": "@obsku/framework",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Effect-powered agent framework with declarative, provider-agnostic API",
   "keywords": [
     "obsku",
