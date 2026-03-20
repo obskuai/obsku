@@ -1,0 +1,77 @@
+name: Prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: NPM dist-tag and snapshot suffix
+        required: true
+        default: prerelease
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.tag }}
+
+permissions:
+  contents: read
+
+jobs:
+  prerelease:
+    name: Publish prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+      - name: Verify publish readiness
+        run: bun run verify:publish
+
+      - name: Validate prerelease tag
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [[ ! "$TAG" =~ ^[a-z0-9-]+$ ]]; then
+            echo "Invalid prerelease tag: $TAG"
+            echo "Use lowercase letters, numbers, and hyphens only."
+            exit 1
+          fi
+          if [[ "$TAG" == "latest" ]]; then
+            echo "'latest' is reserved for stable releases"
+            exit 1
+          fi
+
+      - name: Create snapshot versions
+        run: bunx changeset version --snapshot "${{ inputs.tag }}"
+
+      - name: Verify publish readiness after snapshot versioning
+        run: bun run verify:publish
+
+      - name: Publish prerelease packages
+        run: bunx changeset publish --tag "${{ inputs.tag }}" --no-git-tag
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summarize published package versions
+        run: |
+          {
+            echo "## Published prerelease packages"
+            bun -e 'const paths = [...new Bun.Glob("packages/*/package.json").scanSync("."), ...new Bun.Glob("packages/*/*/package.json").scanSync(".")].sort(); for (const path of paths) { const pkg = await Bun.file(path).json(); if (typeof pkg.name === "string" && pkg.name.startsWith("@obsku/")) console.log(`- ${pkg.name}@${pkg.version}`); }'
+          } >> "$GITHUB_STEP_SUMMARY"
