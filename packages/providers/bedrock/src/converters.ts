@@ -15,42 +15,44 @@ import {
 } from "@obsku/framework";
 
 export function toBedrockMessages(messages: Array<Message>): Array<BedrockMessage> {
-  return messages.map((msg) => ({
-    content: msg.content
-      // Filter out empty text blocks — Bedrock rejects blank text fields
-      .filter((block: ContentBlock) => !(block.type === BlockType.TEXT && block.text.trim() === ""))
-      .map((block: ContentBlock) => {
-        switch (block.type) {
-          case BlockType.TEXT:
-            return { text: block.text } as BedrockContentBlock;
-          case BlockType.TOOL_USE:
-            return {
-              toolUse: {
-                input: block.input,
-                name: block.name,
+  return messages
+    .filter((msg): msg is Message & { role: "user" | "assistant" } => msg.role !== "system")
+    .map((msg) => ({
+      content: msg.content
+        // Filter out empty text blocks — Bedrock rejects blank text fields
+        .filter((block: ContentBlock) => !(block.type === BlockType.TEXT && block.text.trim() === ""))
+        .map((block: ContentBlock) => {
+          switch (block.type) {
+            case BlockType.TEXT:
+              return { text: block.text } as BedrockContentBlock;
+            case BlockType.TOOL_USE:
+              return {
+                toolUse: {
+                  input: block.input,
+                  name: block.name,
+                  toolUseId: block.toolUseId,
+                },
+              } as BedrockContentBlock;
+            case BlockType.TOOL_RESULT: {
+              const toolResult: {
+                content: [{ text: string }];
+                status?: "error";
+                toolUseId: string;
+              } = {
+                content: [{ text: block.content }],
                 toolUseId: block.toolUseId,
-              },
-            } as BedrockContentBlock;
-          case BlockType.TOOL_RESULT: {
-            const toolResult: {
-              content: [{ text: string }];
-              status?: "error";
-              toolUseId: string;
-            } = {
-              content: [{ text: block.content }],
-              toolUseId: block.toolUseId,
-            };
-            if (block.status === "error") {
-              toolResult.status = "error";
+              };
+              if (block.status === "error") {
+                toolResult.status = "error";
+              }
+              return { toolResult } as BedrockContentBlock;
             }
-            return { toolResult } as BedrockContentBlock;
+            default:
+              return assertNever(block);
           }
-          default:
-            return assertNever(block);
-        }
-      }),
-    role: msg.role,
-  }));
+        }),
+      role: msg.role,
+    }));
 }
 
 export function toBedrockTools(tools: Array<ToolDef>): Array<BedrockTool> {

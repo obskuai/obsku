@@ -26,7 +26,7 @@ export async function dispatchToWorker(
       output: truncatedResult,
       round,
       timestamp: Date.now(),
-      type: "supervisor.worker_output",
+      type: "supervisor.worker.output",
       worker: worker.name,
     });
     return trimmedResult;

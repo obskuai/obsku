@@ -14,7 +14,7 @@
     "build": "bun run --filter '@obsku/framework' build && bun run --filter '@obsku/tool-code-interpreter' build && bun run --filter '*' build",
     "test": "bun test $(find packages -name '*.test.ts' ! -path '*code-interpreter-wasm*' ! -path '*code-interpreter-agentcore*') && bun test packages/tools/code-interpreter-agentcore",
     "test:wasm": "bun test packages/tools/code-interpreter-wasm",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsgo --build --emitDeclarationOnly",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
     "format": "bunx biome format --write .",

@@ -33,7 +33,7 @@
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts src/plugin-builder.ts --outdir dist --target node && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "build": "bun build src/index.ts src/plugin-builder.ts --outdir dist --target node --external @obsku/tool-code-interpreter-agentcore --external @aws-sdk/client-bedrock-agentcore --external @obsku/tool-code-interpreter-wasm && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
     "test": "bun test",
     "typecheck": "tsgo --noEmit",
     "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",

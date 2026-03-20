@@ -1,4 +1,4 @@
-import type { Message } from "../types/llm";
+import type { Message } from "../../types/llm";
 
 /**
  * MemoryProvider interface for pluggable conversation memory.

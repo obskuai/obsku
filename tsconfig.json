@@ -27,10 +27,26 @@
     { "path": "./packages/framework" },
 
     { "path": "./packages/checkpoint-sqlite" },
+    { "path": "./packages/checkpoint-redis" },
+    { "path": "./packages/checkpoint-postgres" },
 
     { "path": "./packages/providers/bedrock" },
+    { "path": "./packages/providers/ollama" },
+    { "path": "./packages/providers/ai-sdk" },
 
-    { "path": "./packages/cli" }
+    { "path": "./packages/adapters/agent-server" },
+    { "path": "./packages/adapters/claude-code" },
+
+    { "path": "./packages/tools/shell" },
+    { "path": "./packages/tools/shell-sandbox" },
+    { "path": "./packages/tools/fs" },
+    { "path": "./packages/tools/search" },
+    { "path": "./packages/tools/code-interpreter" },
+    { "path": "./packages/tools/code-interpreter-wasm" },
+    { "path": "./packages/tools/code-interpreter-agentcore" },
+
+    { "path": "./packages/cli" },
+    { "path": "./packages/benchmark" }
   ],
   "exclude": ["node_modules", "dist", "build", "packages/*/dist"],
   "files": []

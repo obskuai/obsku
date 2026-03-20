@@ -2,7 +2,7 @@
 // @obsku/framework — Graph resume from checkpoint
 // =============================================================================
 
-import type { CheckpointStore } from "../checkpoint/index";
+import type { CheckpointBackend } from "../checkpoint/index";
 import type { AgentEvent } from "../types";
 import { GraphCheckpointNotFoundError } from "./errors";
 import { executeGraph } from "./executor";
@@ -11,7 +11,7 @@ import type { Graph, GraphResult } from "./types";
 export async function resumeGraph(
   graph: Graph,
   checkpointId: string,
-  store: CheckpointStore,
+  store: CheckpointBackend,
   input?: unknown,
   onEvent?: (event: AgentEvent) => void
 ): Promise<GraphResult> {

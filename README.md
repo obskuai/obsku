@@ -85,82 +85,34 @@ packages/
 ## Quick Start
 
 ```typescript
-import { agent, plugin, graph, run } from "@obsku/framework"
+import { agent, graph, run, plugin } from "@obsku/framework"
 import { bedrock } from "@obsku/provider-bedrock"
 
-// Define agent
-const assistant = agent({
-  name: "assistant",
-  prompt: "You are a helpful assistant.",
+const provider = bedrock({ model: "<model-id>", maxOutputTokens: 4096 })
+
+// 1. Simple agent
+const assistant = agent({ name: "assistant", prompt: "You are helpful." })
+await assistant.run("Hello!", provider)
+
+// 2. Graph with agent + function nodes
+const pipeline = graph({
+  provider,
+  entry: "validate",
+  nodes: [
+    { id: "validate", executor: async (input) => JSON.parse(input) },  // function node (no LLM)
+    agent({ name: "analyze", prompt: "Analyze the data" }),             // agent node (LLM)
+  ],
+  edges: [{ from: "validate", to: "analyze" }],
 })
-
-// Run agent
-const result = await assistant.run("Hello!", bedrock({ model: "<your-bedrock-model-id>", maxOutputTokens: 4096 }))
-
-// With checkpointing (session persistence)
-import { SqliteCheckpointStore } from "@obsku/checkpoint-sqlite"
-
-const store = new SqliteCheckpointStore("./sessions.db")
-const session = await store.createSession("./project")
-
-await run(myGraph, {
-  input: "Scan example.com",
-  checkpointStore: store,
-  sessionId: session.id,
-})
-
-// Resume from checkpoint (time-travel)
-const checkpoint = await store.getLatestCheckpoint(session.id)
-await run(myGraph, { ..., resumeFrom: checkpoint })
-
-// With memory (entity extraction + long-term facts)
-const memoryAgent = agent({
-  name: "assistant",
-  prompt: "You are a helpful assistant.",
-  memory: {
-    enabled: true,
-    store,
-    entityMemory: true,      // Extract entities from conversations
-    longTermMemory: true,    // Save facts across sessions
-    contextInjection: true,  // Inject memory into prompts
-  },
-})
-
-await memoryAgent.run("example.com is owned by John Doe", bedrock({ model: "<your-bedrock-model-id>", maxOutputTokens: 4096 }))
-// Later: agent remembers "example.com" entity and ownership fact
-
-// With vector memory (semantic search)
-import { OllamaEmbedding } from "@obsku/provider-ollama"
-
-const semanticAgent = agent({
-  name: "assistant",
-  prompt: "Assistant with semantic memory",
-  memory: {
-    enabled: true,
-    store,
-    entityMemory: true,
-    longTermMemory: true,
-    contextInjection: true,
-    embeddingProvider: new OllamaEmbedding({ model: "multilingual-e5-large", dimension: 1024 }), // auto-embed entities & facts
-  },
-})
-// Entities/facts are embedded automatically; queries use semantic search
+await run(pipeline, { input: '{"target":"example.com"}' })
 ```
 
 See [`packages/framework/README.md`](./packages/framework/README.md) for full documentation.
 
 ## Status
 
-**Current**: Framework P12 complete. `bun test` 3417 pass 0 fail (203 files).  
-**Graph**: Cyclic DAG executor with subgraphs + parallel waves + checkpoints  
-**Checkpoint**: Integrated into framework with InMemory, SQLite, Redis, PostgreSQL backends (time-travel, fork/branch)  
-**Multi-Agent**: Supervisor and Crew patterns with checkpoint integration  
-**Memory**: Entity extraction, long-term facts, context injection with checkpoint backends  
-**Vector Memory**: Semantic search with Bedrock/Ollama embeddings (InMemory + SQLite)  
-**Telemetry**: OpenTelemetry auto-instrumentation  
-**Tests**: Full test coverage with parallel execution verification
-
-APIs are stabilizing but not yet 1.0.
+**Current**: Framework P12 complete. `bun test` 3322 pass 0 fail.
+APIs stabilizing, not yet 1.0.
 
 ## Safety
 Authorized security testing only.

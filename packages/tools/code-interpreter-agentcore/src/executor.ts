@@ -46,7 +46,7 @@ export class AgentCoreExecutor implements CodeExecutor {
   }
 
   async execute(options: ExecutionOptions): Promise<AgentCoreExecutionResult> {
-    const abortSignal = AbortSignal.timeout(options.timeout ?? DEFAULTS.codeInterpreterExecTimeout);
+    const abortSignal = AbortSignal.timeout(options.timeoutMs ?? DEFAULTS.codeInterpreterExecTimeout);
     let sessionId: string | undefined;
 
     try {

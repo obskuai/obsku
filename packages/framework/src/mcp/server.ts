@@ -47,7 +47,7 @@ function pluginDefToMcpToolSchema(plugin: PluginDef): {
 } {
   return {
     description: plugin.description,
-    inputSchema: z.toJSONSchema(plugin.params),
+    inputSchema: z.toJSONSchema(plugin.params) as unknown as JsonSchema,
     name: plugin.name,
   };
 }

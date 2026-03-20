@@ -47,7 +47,7 @@ export class AgentCoreSessionManager extends BaseSessionManager<AgentCoreSession
   ): Promise<ExecutionResult> {
     const options = session.pendingExecutionOptions;
     const abortSignal = AbortSignal.timeout(
-      options?.timeout ?? DEFAULTS.codeInterpreterExecTimeout
+      options?.timeoutMs ?? DEFAULTS.codeInterpreterExecTimeout
     );
     const language = options?.language ?? session.language;
 

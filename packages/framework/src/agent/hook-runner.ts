@@ -49,6 +49,7 @@ export function runHookSafe<T>(
         timestamp: Date.now(),
         type: "hook.error",
       }).pipe(
+        Effect.map(() => Option.none<T>()),
         Effect.catchAll((emitError) => {
           const msg = `hook.error emit failed: emit=${emitError}, original=${hookError}`;
           debugLog(msg);

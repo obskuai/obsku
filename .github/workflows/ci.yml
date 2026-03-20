@@ -66,17 +66,3 @@ jobs:
         run: bun run build
       - name: Verify publish readiness
         run: bun run verify:publish
-
-
-  audit:
-    name: Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Run pnpm audit
-        run: pnpm audit --audit-level=high

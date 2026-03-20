@@ -103,7 +103,7 @@ const parseValueFromFallback = <T>(fallback: T, field: string): ValueParser<T> =
 
   for (const handler of typeHandlers) {
     if (handler.test(fallback)) {
-      return asValueParser<T>(handler.createParser(field));
+      return handler.createParser(field) as ValueParser<T>;
     }
   }
 

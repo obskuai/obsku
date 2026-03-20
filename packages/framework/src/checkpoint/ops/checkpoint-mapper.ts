@@ -29,7 +29,7 @@ export function mapCheckpointRow(
     nodeId: mapColumn(row, "nodeId", "node_id"),
     nodeResults: deserializeValue(
       serializer,
-      (row.nodeResults ?? row.node_results) as string | Checkpoint["nodeResults"] | undefined,
+      (row.nodeResults ?? (row as Record<string, unknown>)["node_results"]) as string | Checkpoint["nodeResults"] | undefined,
       {},
       requireCheckpointNodeResultsValue,
       "nodeResults"
@@ -37,7 +37,7 @@ export function mapCheckpointRow(
     parentId: mapColumn(row, "parentId", "parent_id"),
     pendingNodes: deserializeValue(
       serializer,
-      (row.pendingNodes ?? row.pending_nodes) as string | Checkpoint["pendingNodes"] | undefined,
+      (row.pendingNodes ?? (row as Record<string, unknown>)["pending_nodes"]) as string | Checkpoint["pendingNodes"] | undefined,
       [],
       requireStringArrayValue,
       "pendingNodes"

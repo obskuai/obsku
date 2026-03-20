@@ -69,8 +69,8 @@ async function loadEntities(
       workspaceId: ctx.workspaceId,
     });
 
-    const sessionIds = new Set(sessionEntities.map((e) => e.id));
-    const additional = workspaceEntities.filter((e) => !sessionIds.has(e.id));
+    const sessionIds = new Set(sessionEntities.map((e: Entity) => e.id));
+    const additional = workspaceEntities.filter((e: Entity) => !sessionIds.has(e.id));
     return [...sessionEntities, ...additional];
   }
 

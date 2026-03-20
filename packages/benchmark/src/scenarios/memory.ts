@@ -1,4 +1,4 @@
-import { agent, type CanonicalAgentEvent } from "@obsku/framework";
+import { agent, type CanonicalAgentEvent, type MemoryStoreOperations } from "@obsku/framework";
 import { type BenchmarkContext } from "../runner";
 import { ratio } from "../scoring/scorer";
 import { assertMetric, MetricEvaluation } from "../scoring/shared";
@@ -106,7 +106,7 @@ export const memoryScenario: Scenario<BenchmarkContext> = {
         enabled: true,
         entityMemory: true,
         longTermMemory: true,
-        store: ctx.checkpointStore,
+        store: ctx.checkpointStore as unknown as MemoryStoreOperations,
       },
       name: "memory-benchmark",
       prompt:

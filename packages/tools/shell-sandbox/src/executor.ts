@@ -54,7 +54,11 @@ export class SandboxedShellExecutor implements SandboxedShellExecutorContract {
 
     try {
       const { cwd, fs } = this.createFileSystem();
-      const filteredEnv = filterEnvVars(opts.env, this.options.envFilter, "shell-sandbox");
+      const rawEnv = filterEnvVars(opts.env, this.options.envFilter, "shell-sandbox");
+      const filteredEnv: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawEnv)) {
+        if (v !== undefined) filteredEnv[k] = v;
+      }
       const bash = new Bash({
         cwd,
         fs,

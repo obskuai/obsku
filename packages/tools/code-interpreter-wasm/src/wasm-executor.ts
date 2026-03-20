@@ -53,7 +53,7 @@ export class WasmExecutor implements CodeExecutor {
   async execute(options: ExecutionOptions): Promise<ExecutionResult> {
     try {
       const runtime = this.runtimeForLanguage(options.language);
-      const timeoutMs = options.timeout ?? DEFAULT_TIMEOUT_MS;
+      const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
       const wasmOptions: WasmExecutionOptions = {
         ...options,
       };

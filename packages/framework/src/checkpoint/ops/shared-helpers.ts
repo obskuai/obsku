@@ -97,10 +97,10 @@ export function validateEntityExists<T>(id: string, getter: () => T | null | Pro
   return result;
 }
 
-export function mapRows<T>(
-  rows: unknown[],
+export function mapRows<T, R = unknown>(
+  rows: R[],
   serializer: JsonPlusSerializer,
-  mapper: (s: JsonPlusSerializer, row: unknown) => T
+  mapper: (s: JsonPlusSerializer, row: R) => T
 ): T[] {
   return rows.map((row) => mapper(serializer, row));
 }
