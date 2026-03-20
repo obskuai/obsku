@@ -57,5 +57,9 @@
     "typescript": "^5.9.3",
     "@types/node": "^20.0.0",
     "effect": "*"
+  },
+  "homepage": "https://github.com/obskuai/obsku/tree/main/packages/tools/code-interpreter-wasm",
+  "bugs": {
+    "url": "https://github.com/obskuai/obsku/issues"
   }
 }

@@ -89,5 +89,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "homepage": "https://github.com/obskuai/obsku/tree/main/packages/framework",
+  "bugs": {
+    "url": "https://github.com/obskuai/obsku/issues"
   }
 }

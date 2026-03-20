@@ -62,5 +62,9 @@
     "package.json",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "homepage": "https://github.com/obskuai/obsku/tree/main/packages/providers/ai-sdk",
+  "bugs": {
+    "url": "https://github.com/obskuai/obsku/issues"
+  }
 }

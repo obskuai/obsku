@@ -55,5 +55,9 @@
     "package.json",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "homepage": "https://github.com/obskuai/obsku/tree/main/packages/providers/bedrock",
+  "bugs": {
+    "url": "https://github.com/obskuai/obsku/issues"
+  }
 }
