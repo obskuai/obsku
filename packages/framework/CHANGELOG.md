@@ -1,5 +1,11 @@
 # @obsku/framework
 
+## 0.2.1
+
+### Patch Changes
+
+- 0e5980a: fix: add src/ to npm tarball for packages with bun export conditions
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@obsku/provider-bedrock",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "AWS Bedrock provider for @obsku/framework",
   "keywords": [
     "obsku",

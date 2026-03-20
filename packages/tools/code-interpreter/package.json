@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-code-interpreter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local code execution tool for @obsku/framework",
   "keywords": [
     "obsku",

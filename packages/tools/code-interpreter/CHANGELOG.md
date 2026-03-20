@@ -1,5 +1,14 @@
 # @obsku/tool-code-interpreter
 
+## 1.0.1
+
+### Patch Changes
+
+- 0e5980a: fix: add src/ to npm tarball for packages with bun export conditions
+- Updated dependencies [0e5980a]
+  - @obsku/framework@0.2.1
+  - @obsku/tool-code-interpreter-wasm@0.2.1
+
 ## 1.0.0
 
 ### Minor Changes

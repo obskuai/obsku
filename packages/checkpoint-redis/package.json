@@ -1,6 +1,6 @@
 {
   "name": "@obsku/checkpoint-redis",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Redis checkpoint storage backend for @obsku/framework",
   "keywords": [
     "obsku",

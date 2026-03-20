@@ -1,6 +1,6 @@
 {
   "name": "@obsku/adapter-agent-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A2A/AgentCore HTTP server adapter for @obsku/framework",
   "keywords": [
     "obsku",

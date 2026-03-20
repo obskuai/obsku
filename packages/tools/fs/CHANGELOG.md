@@ -1,5 +1,12 @@
 # @obsku/tool-fs
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [0e5980a]
+  - @obsku/framework@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
