@@ -104,14 +104,7 @@ interface A2ASSEEvent {
 }
 
 interface AgentCoreSSEEvent {
-  data: {
-    data: Record<string, unknown>;
-    sessionId: string;
-    timestamp: number;
-    turnId?: string;
-    type: string;
-  };
-  event?: string;
+  event: Record<string, unknown>;
 }
 
 async function collectA2ASSE(port: number, body: unknown): Promise<Array<A2ASSEEvent>> {
@@ -139,16 +132,26 @@ async function parseAgentCoreSSE(response: Response): Promise<Array<AgentCoreSSE
       .map((line) => line.slice(6));
     if (dataLines.length > 0) {
       try {
-        events.push({
-          data: JSON.parse(dataLines.join("\n")) as AgentCoreSSEEvent["data"],
-          event: lines.find((line) => line.startsWith("event: "))?.slice(7),
-        });
+        const parsed = JSON.parse(dataLines.join("\n")) as AgentCoreSSEEvent;
+        events.push(parsed);
       } catch {
         /* noop */
       }
     }
   }
   return events;
+}
+
+function getStrandsEventName(event: AgentCoreSSEEvent): string | undefined {
+  return Object.keys(event.event)[0];
+}
+
+function getStrandsEventPayload(
+  event: AgentCoreSSEEvent,
+  name: string
+): Record<string, unknown> | undefined {
+  const payload = event.event[name];
+  return payload && typeof payload === "object" ? (payload as Record<string, unknown>) : undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -535,7 +538,7 @@ describe("AgentCore Protocol Characterization", () => {
       },
     });
 
-    it("emits SSE with event field, sessionId, timestamp, and type", async () => {
+    it("emits Strands SSE events without event/session metadata fields", async () => {
       const server = serve(createEventEmittingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -550,22 +553,33 @@ describe("AgentCore Protocol Characterization", () => {
 
         expect(res.status).toBe(HTTP_STATUS.OK);
         const events = await parseAgentCoreSSE(res);
-        expect(events.length).toBeGreaterThan(0);
+        expect(events.map(getStrandsEventName)).toEqual([
+          "messageStart",
+          "contentBlockStart",
+          "contentBlockDelta",
+          "contentBlockDelta",
+          "contentBlockStop",
+          "messageStop",
+        ]);
+
+        expect(getStrandsEventPayload(events[2]!, "contentBlockDelta")?.delta).toEqual({
+          text: "Hello ",
+        });
+        expect(getStrandsEventPayload(events[3]!, "contentBlockDelta")?.delta).toEqual({
+          text: "world",
+        });
 
         for (const event of events) {
-          // Pin: SSE has event: field matching data.type
-          expect(event.event).toBe(event.data.type);
-          // Pin: timestamp is a number
-          expect(typeof event.data.timestamp).toBe("number");
-          // Pin: sessionId is present
-          expect(typeof event.data.sessionId).toBe("string");
+          expect(JSON.stringify(event)).not.toContain("sessionId");
+          expect(JSON.stringify(event)).not.toContain("timestamp");
+          expect(JSON.stringify(event)).not.toContain("turnId");
         }
       } finally {
         server.stop();
       }
     });
 
-    it("propagates turnId from turn.start through turn.end", async () => {
+    it("emits Strands lifecycle from turn.start through turn.end", async () => {
       const server = serve(createEventEmittingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -579,18 +593,18 @@ describe("AgentCore Protocol Characterization", () => {
         });
 
         const events = await parseAgentCoreSSE(res);
-        const turnStart = events.find((e) => e.event === "turn.start");
-        const streamChunk = events.find((e) => e.event === "stream.chunk");
-        const turnEnd = events.find((e) => e.event === "turn.end");
-        const sessionEnd = events.find((e) => e.event === "session.end");
-
-        // Pin: turnId propagates from turn.start
-        expect(turnStart?.data.turnId).toBe("turn-001");
-        // Pin: turnId is available on events within the turn
-        expect(streamChunk?.data.turnId).toBe("turn-001");
-        expect(turnEnd?.data.turnId).toBe("turn-001");
-        // Pin: turnId is NOT on session.end
-        expect(sessionEnd?.data.turnId).toBeUndefined();
+        expect(events.map(getStrandsEventName)).toEqual([
+          "messageStart",
+          "contentBlockStart",
+          "contentBlockDelta",
+          "contentBlockDelta",
+          "contentBlockStop",
+          "messageStop",
+        ]);
+        expect(getStrandsEventPayload(events[0]!, "messageStart")).toEqual({ role: "assistant" });
+        expect(getStrandsEventPayload(events[5]!, "messageStop")).toEqual({
+          stopReason: "end_turn",
+        });
       } finally {
         server.stop();
       }
@@ -609,10 +623,11 @@ describe("AgentCore Protocol Characterization", () => {
           method: "POST",
         });
 
-        const text = await res.text();
-        const blocks = text.trim().split("\n\n");
-        // Pin: last block contains session.end event
-        expect(blocks.at(-1)?.includes("event: session.end")).toBe(true);
+        const events = await parseAgentCoreSSE(res);
+        expect(getStrandsEventName(events.at(-1)!)).toBe("messageStop");
+        expect(getStrandsEventPayload(events.at(-1)!, "messageStop")).toEqual({
+          stopReason: "end_turn",
+        });
       } finally {
         server.stop();
       }
@@ -620,8 +635,32 @@ describe("AgentCore Protocol Characterization", () => {
   });
 
   describe("Error Flow", () => {
-    it("emits agent.error event and synthetic failed session.end on error", async () => {
-      const server = serve(errorAgent, mockProvider, {
+    it("closes open Strands blocks and emits messageStop(error) on error", async () => {
+      const agent: AgentLike = {
+        name: "streaming-error-agent",
+        run: async (
+          _input: string,
+          _provider: LLMProvider,
+          options?: { onEvent?: (event: AgentEvent) => void }
+        ): Promise<string> => {
+          options?.onEvent?.({
+            phase: "summarizing",
+            timestamp: Date.now(),
+            turn: 0,
+            turnId: "turn-001",
+            type: "turn.start",
+          });
+          options?.onEvent?.({
+            content: "partial",
+            phase: "summarizing",
+            timestamp: Date.now(),
+            type: "stream.chunk",
+          });
+          throw new Error("Simulated agent failure");
+        },
+      };
+
+      const server = serve(agent, mockProvider, {
         port: 0,
         protocol: "agentcore",
       });
@@ -636,16 +675,16 @@ describe("AgentCore Protocol Characterization", () => {
         expect(res.status).toBe(HTTP_STATUS.OK);
         const events = await parseAgentCoreSSE(res);
 
-        // Pin: error flow has exactly 2 events
-        expect(events.length).toBe(2);
-
-        // Pin: first event is agent.error with message
-        expect(events[0].event).toBe("agent.error");
-        expect(events[0].data.data.message).toBe("Simulated agent failure");
-
-        // Pin: second event is synthetic session.end with failed status
-        expect(events[1].event).toBe("session.end");
-        expect(events[1].data.data.status).toBe("failed");
+        expect(events.map(getStrandsEventName)).toEqual([
+          "messageStart",
+          "contentBlockStart",
+          "contentBlockDelta",
+          "contentBlockStop",
+          "messageStop",
+        ]);
+        expect(getStrandsEventPayload(events[4]!, "messageStop")).toEqual({
+          stopReason: "error",
+        });
       } finally {
         server.stop();
       }
@@ -815,20 +854,35 @@ describe("Protocol Differences (Documentation)", () => {
     }
   });
 
-  it("AgentCore: uses custom envelope with event, sessionId, timestamp, type", async () => {
+  it("AgentCore: uses Strands data envelope without SSE event field", async () => {
     const agent: AgentLike = {
       name: "simple-agent",
       run: async (_input, _provider, options?): Promise<string> => {
         if (options?.onEvent) {
           options.onEvent({
-            sessionId: "sess-1",
+            phase: "summarizing",
             timestamp: 12345,
-            type: "session.start",
+            turn: 0,
+            turnId: "turn-001",
+            type: "turn.start",
+          });
+          options.onEvent({
+            content: "done",
+            phase: "summarizing",
+            timestamp: 12346,
+            type: "stream.chunk",
+          });
+          options.onEvent({
+            status: "completed",
+            timestamp: 12347,
+            turn: 0,
+            turnId: "turn-001",
+            type: "turn.end",
           });
           options.onEvent({
             sessionId: "sess-1",
             status: "complete",
-            timestamp: 12346,
+            timestamp: 12348,
             type: "session.end",
           });
         }
@@ -851,10 +905,9 @@ describe("Protocol Differences (Documentation)", () => {
       const text = await res.text();
       const blocks = text.trim().split("\n\n");
 
-      // Pin: AgentCore uses SSE event: field + data envelope
       for (const block of blocks) {
-        expect(block).toMatch(/event: \w+/);
-        expect(block).toMatch(/data: \{/);
+        expect(block).toMatch(/^data: \{"event":\{/);
+        expect(block).not.toContain("event: ");
       }
     } finally {
       server.stop();

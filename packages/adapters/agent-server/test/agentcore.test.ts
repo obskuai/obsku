@@ -86,7 +86,31 @@ function emitEvent(onEvent: ((event: AgentEvent) => void) | undefined, event: un
 
 const createFailingAgent = (): AgentLike => ({
   name: "fail-agent",
-  run: async (): Promise<string> => {
+  run: async (
+    _input: string,
+    _provider: LLMProvider,
+    options?: { messages?: Array<ConversationMessage>; onEvent?: (event: AgentEvent) => void }
+  ): Promise<string> => {
+    if (options?.onEvent) {
+      emitEvent(options.onEvent, {
+        sessionId: "fail-session",
+        timestamp: Date.now(),
+        type: "session.start",
+      });
+      emitEvent(options.onEvent, {
+        phase: "executing",
+        timestamp: Date.now(),
+        turn: 0,
+        type: "turn.start",
+      });
+      emitEvent(options.onEvent, { timestamp: Date.now(), turn: 0, type: "stream.start" });
+      emitEvent(options.onEvent, {
+        content: "before boom",
+        phase: "executing",
+        timestamp: Date.now(),
+        type: "stream.chunk",
+      });
+    }
     throw new Error("agent exploded");
   },
 });
@@ -223,15 +247,31 @@ const createToolCallingAgent = (): AgentLike => ({
 });
 
 interface AgentCoreSSEEvent {
-  data: {
-    data: Record<string, unknown>;
-    sessionId: string;
-    timestamp: number;
-    turnId?: string;
-    type: string;
+  event: {
+    contentBlockDelta?: {
+      contentBlockIndex: number;
+      delta: { text?: string; toolUse?: { input: string } };
+    };
+    contentBlockStart?: {
+      contentBlockIndex: number;
+      start: { text?: string; toolUse?: { name: string; toolUseId: string } };
+    };
+    contentBlockStop?: {
+      contentBlockIndex: number;
+    };
+    messageStart?: {
+      role: string;
+    };
+    messageStop?: {
+      stopReason: string;
+    };
+    metadata?: {
+      usage: { inputTokens: number; outputTokens: number; totalTokens: number };
+    };
   };
-  event?: string;
 }
+
+type AgentCoreSSEEventType = keyof AgentCoreSSEEvent["event"];
 
 const createTurnTrackingAgent = (): AgentLike => ({
   name: "turn-tracking-agent",
@@ -296,10 +336,16 @@ async function parseSSE(response: Response): Promise<Array<AgentCoreSSEEvent>> {
       .map((line) => line.slice(6));
     if (dataLines.length > 0) {
       try {
-        events.push({
-          data: JSON.parse(dataLines.join("\n")) as AgentCoreSSEEvent["data"],
-          event: lines.find((line) => line.startsWith("event: "))?.slice(7),
-        });
+        const parsed = JSON.parse(dataLines.join("\n")) as unknown;
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "event" in parsed &&
+          typeof parsed.event === "object" &&
+          parsed.event !== null
+        ) {
+          events.push(parsed as AgentCoreSSEEvent);
+        }
       } catch {
         /* noop */
       }
@@ -308,17 +354,22 @@ async function parseSSE(response: Response): Promise<Array<AgentCoreSSEEvent>> {
   return events;
 }
 
+function getEventType(event: AgentCoreSSEEvent): AgentCoreSSEEventType | undefined {
+  const [type] = Object.keys(event.event) as Array<AgentCoreSSEEventType>;
+  return type;
+}
+
 function extractEventsByType(
   events: Array<AgentCoreSSEEvent>,
-  type: string
+  type: AgentCoreSSEEventType
 ): Array<AgentCoreSSEEvent> {
-  return events.filter((event) => event.data.type === type);
+  return events.filter((event) => getEventType(event) === type);
 }
 
 function extractChunkTexts(events: Array<AgentCoreSSEEvent>): Array<string> {
-  return extractEventsByType(events, "stream.chunk").map((event) =>
-    String(event.data.data.content)
-  );
+  return extractEventsByType(events, "contentBlockDelta")
+    .map((event) => event.event.contentBlockDelta?.delta.text)
+    .filter((text): text is string => typeof text === "string");
 }
 
 // --- Test Suites ---
@@ -348,29 +399,29 @@ describe("AgentCore protocol via serve()", () => {
 
       const events = await parseSSE(res);
 
-      expect(events.length).toBeGreaterThanOrEqual(7);
-      expect(events[0].event).toBe("session.start");
-      expect(events[0].data.type).toBe("session.start");
-      expect(events[0].data.sessionId).toBe("framework-session-1");
-      expect(typeof events[0].data.timestamp).toBe("number");
+      expect(events).toHaveLength(7);
+      expect(events[0].event).toEqual({ messageStart: { role: "assistant" } });
+      expect(events[1].event).toEqual({
+        contentBlockStart: { contentBlockIndex: 0, start: { text: "" } },
+      });
 
       const chunks = extractChunkTexts(events);
       expect(chunks).toEqual(["Hello ", "world!"]);
 
-      const completion = events.find((event) => event.data.type === "agent.complete");
+      const completion = events.find((event) => getEventType(event) === "metadata");
       expect(completion).toBeDefined();
-      expect(completion!.event).toBe("agent.complete");
-      expect(completion!.data.data.usage).toEqual({
-        llmCalls: 1,
-        totalInputTokens: 10,
-        totalOutputTokens: 5,
+      expect(completion!.event).toEqual({
+        metadata: {
+          usage: {
+            inputTokens: 10,
+            outputTokens: 5,
+            totalTokens: 15,
+          },
+        },
       });
 
       const last = events.at(-1)!;
-      expect(last.event).toBe("session.end");
-      expect(last.data.type).toBe("session.end");
-      expect(last.data.data.status).toBe("complete");
-      expect(last.data.sessionId).toBe("framework-session-1");
+      expect(last.event).toEqual({ messageStop: { stopReason: "end_turn" } });
     });
   });
 
@@ -396,9 +447,9 @@ describe("AgentCore protocol via serve()", () => {
 
       expect(res.status).toBe(200);
       const events = await parseSSE(res);
-      expect(events.length).toBeGreaterThanOrEqual(7);
-      expect(events[0].event).toBe("session.start");
-      expect(events.at(-1)!.event).toBe("session.end");
+      expect(events).toHaveLength(7);
+      expect(events[0].event).toEqual({ messageStart: { role: "assistant" } });
+      expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
     });
   });
 
@@ -422,7 +473,7 @@ describe("AgentCore protocol via serve()", () => {
 
         expect(res.status).toBe(200);
         const events = await parseSSE(res);
-        expect(events.at(-1)!.event).toBe("session.end");
+        expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
 
         expect(historyAgent.capturedMessages).toBeDefined();
         expect(historyAgent.capturedMessages).toHaveLength(2);
@@ -454,7 +505,8 @@ describe("AgentCore protocol via serve()", () => {
 
         expect(res.status).toBe(200);
         const events = await parseSSE(res);
-        expect(events.length).toBeGreaterThanOrEqual(7);
+        expect(events).toHaveLength(6);
+        expect(extractChunkTexts(events)).toEqual(["reply"]);
       } finally {
         server.stop();
       }
@@ -603,8 +655,8 @@ describe("AgentCore protocol via serve()", () => {
       expect(res.headers.get("content-type")).toBe("text/event-stream");
 
       const events = await parseSSE(res);
-      expect(events[0].event).toBe("session.start");
-      expect(events.at(-1)!.event).toBe("session.end");
+      expect(events[0].event).toEqual({ messageStart: { role: "assistant" } });
+      expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
 
       const chunks = extractChunkTexts(events);
       expect(chunks).toEqual(["Hello ", "world!"]);
@@ -691,7 +743,7 @@ describe("AgentCore protocol via serve()", () => {
   });
 
   describe("Agent error during stream", () => {
-    it("emits error envelope and synthetic failed session.end", async () => {
+    it("closes open blocks and emits messageStop(error)", async () => {
       const server = serve(createFailingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -707,11 +759,24 @@ describe("AgentCore protocol via serve()", () => {
         expect(res.status).toBe(200);
         const events = await parseSSE(res);
 
-        expect(events).toHaveLength(2);
-        expect(events[0].event).toBe("agent.error");
-        expect(events[0].data.data.message).toBe("agent exploded");
-        expect(events[1].event).toBe("session.end");
-        expect(events[1].data.data.status).toBe("failed");
+        expect(events).toEqual([
+          { event: { messageStart: { role: "assistant" } } },
+          {
+            event: {
+              contentBlockStart: { contentBlockIndex: 0, start: { text: "" } },
+            },
+          },
+          {
+            event: {
+              contentBlockDelta: {
+                contentBlockIndex: 0,
+                delta: { text: "before boom" },
+              },
+            },
+          },
+          { event: { contentBlockStop: { contentBlockIndex: 0 } } },
+          { event: { messageStop: { stopReason: "error" } } },
+        ]);
       } finally {
         server.stop();
       }
@@ -719,7 +784,7 @@ describe("AgentCore protocol via serve()", () => {
   });
 
   describe("ToolCalling events as toolUse contentBlocks", () => {
-    it("streams tool lifecycle events without filtering", async () => {
+    it("maps tool lifecycle to Strands toolUse content blocks", async () => {
       const server = serve(createToolCallingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -735,29 +800,44 @@ describe("AgentCore protocol via serve()", () => {
         expect(res.status).toBe(200);
         const events = await parseSSE(res);
 
-        expect(events.some((event) => event.event === "tool.call")).toBe(true);
-        expect(events.some((event) => event.event === "tool.result")).toBe(true);
-        expect(events.some((event) => event.event === "stream.chunk")).toBe(true);
-        expect(events.at(-1)!.event).toBe("session.end");
+        expect(events).toHaveLength(12);
+        expect(extractChunkTexts(events)).toEqual([
+          "Let me search for that.",
+          "Here are the results.",
+        ]);
 
-        const toolCall = events.find((event) => event.event === "tool.call");
-        expect(toolCall).toBeDefined();
-        expect(toolCall!.data.data).toEqual({
-          args: { query: "test" },
-          toolName: "search",
-          toolUseId: "tu-001",
+        const toolStarts = extractEventsByType(events, "contentBlockStart").filter(
+          (event) => event.event.contentBlockStart?.start.toolUse !== undefined
+        );
+        expect(toolStarts).toHaveLength(1);
+        expect(toolStarts[0]!.event).toEqual({
+          contentBlockStart: {
+            contentBlockIndex: 1,
+            start: { toolUse: { name: "search", toolUseId: "tu-001" } },
+          },
         });
-        expect(typeof toolCall!.data.timestamp).toBe("number");
 
-        const toolResult = events.find((event) => event.event === "tool.result");
-        expect(toolResult).toBeDefined();
-        expect(toolResult!.data.data).toEqual({
-          isError: false,
-          result: "Found 3 results",
-          toolName: "search",
-          toolUseId: "tu-001",
+        const toolDeltas = extractEventsByType(events, "contentBlockDelta").filter(
+          (event) => event.event.contentBlockDelta?.delta.toolUse !== undefined
+        );
+        expect(toolDeltas).toHaveLength(1);
+        expect(toolDeltas[0]!.event).toEqual({
+          contentBlockDelta: {
+            contentBlockIndex: 1,
+            delta: { toolUse: { input: '{"query":"test"}' } },
+          },
         });
-        expect(typeof toolResult!.data.timestamp).toBe("number");
+
+        expect(extractEventsByType(events, "metadata")).toEqual([
+          {
+            event: {
+              metadata: {
+                usage: { inputTokens: 20, outputTokens: 15, totalTokens: 35 },
+              },
+            },
+          },
+        ]);
+        expect(events.at(-1)!.event).toEqual({ messageStop: { stopReason: "end_turn" } });
       } finally {
         server.stop();
       }
@@ -840,7 +920,7 @@ describe("AgentCore protocol via serve()", () => {
   });
 
   describe("SSE envelope", () => {
-    it("adds event field, sessionId, and timestamp", async () => {
+    it("uses Strands data-only envelope without framework metadata", async () => {
       const server = serve(createToolCallingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -857,17 +937,17 @@ describe("AgentCore protocol via serve()", () => {
         expect(events.length).toBeGreaterThan(0);
 
         for (const event of events) {
-          expect(event.event).toBe(event.data.type);
-          expect(typeof event.data.timestamp).toBe("number");
-          expect(event.data.timestamp).toBeGreaterThan(0);
-          expect(event.data.sessionId).toBe("tool-session");
+          expect(Object.keys(event.event)).toHaveLength(1);
+          expect(JSON.stringify(event)).not.toContain("sessionId");
+          expect(JSON.stringify(event)).not.toContain("timestamp");
+          expect(JSON.stringify(event)).not.toContain("turnId");
         }
       } finally {
         server.stop();
       }
     });
 
-    it("closes stream on session.end", async () => {
+    it("closes stream after final messageStop event", async () => {
       const server = serve(createMockAgent(), mockProvider, { port: 0, protocol: "agentcore" });
 
       try {
@@ -878,21 +958,18 @@ describe("AgentCore protocol via serve()", () => {
         });
 
         const text = await res.text();
-        const sessionEndCount = (text.match(/^event: session\.end$/gm) ?? []).length;
-        expect(sessionEndCount).toBe(1);
-        expect(
-          text
-            .trimEnd()
-            .endsWith('data: {"type":"session.end","sessionId":"framework-session-1","timestamp":')
-        ).toBe(false);
+        const eventFieldCount = (text.match(/^event:/gm) ?? []).length;
+        expect(eventFieldCount).toBe(0);
+        expect(text).not.toContain("session.end");
         const blocks = text.trim().split("\n\n");
-        expect(blocks.at(-1)?.includes("event: session.end")).toBe(true);
+        expect(blocks).toHaveLength(7);
+        expect(blocks.at(-1)).toBe('data: {"event":{"messageStop":{"stopReason":"end_turn"}}}');
       } finally {
         server.stop();
       }
     });
 
-    it("propagates turnId until turn.end and clears it for session.end", async () => {
+    it("does not leak turnId into Strands output", async () => {
       const server = serve(createTurnTrackingAgent(), mockProvider, {
         port: 0,
         protocol: "agentcore",
@@ -906,15 +983,14 @@ describe("AgentCore protocol via serve()", () => {
         });
 
         const events = await parseSSE(res);
-        const turnStart = events.find((event) => event.event === "turn.start");
-        const streamChunk = events.find((event) => event.event === "stream.chunk");
-        const turnEnd = events.find((event) => event.event === "turn.end");
-        const sessionEnd = events.find((event) => event.event === "session.end");
-
-        expect(turnStart?.data.turnId).toBe("turn-123");
-        expect(streamChunk?.data.turnId).toBe("turn-123");
-        expect(turnEnd?.data.turnId).toBe("turn-123");
-        expect(sessionEnd?.data.turnId).toBeUndefined();
+        expect(events.map(getEventType)).toEqual([
+          "messageStart",
+          "contentBlockStart",
+          "contentBlockDelta",
+          "contentBlockStop",
+          "messageStop",
+        ]);
+        expect(JSON.stringify(events)).not.toContain("turn-123");
       } finally {
         server.stop();
       }

@@ -10,7 +10,17 @@ import {
   runAgentStream,
 } from "./handler-utils";
 import { parseAgentCoreRequest } from "./parse-request";
-import { type AgentLike, createWriteErr, formatSSEMessage, type ServeOptions } from "./shared";
+import { type AgentLike, createWriteErr, type ServeOptions } from "./shared";
+import {
+  contentBlockDelta,
+  contentBlockStart,
+  contentBlockStop,
+  messageStart,
+  messageStop,
+  metadata,
+  toolUseContentBlockDelta,
+  toolUseContentBlockStart,
+} from "./strands-sse";
 
 export interface AgentCoreRequest {
   message?: string;
@@ -21,89 +31,135 @@ export interface AgentCoreRequest {
   system_prompt?: string;
 }
 
-interface AgentCoreSSEState {
-  currentTurnId?: string;
-  sessionEnded: boolean;
-  sessionId: string;
+/** Tracks content block indices for Strands SSE translation. */
+interface StrandsBlockState {
+  blockIndex: number;
+  inTextBlock: boolean;
+  messageStarted: boolean;
 }
 
-interface AgentCoreSSEEnvelope {
-  data: Record<string, unknown>;
-  sessionId: string;
-  timestamp: number;
-  turnId?: string;
-  type: AgentEvent["type"];
-}
-
-function createAgentCoreEnvelope(
-  event: AgentEvent,
-  sessionId: string,
-  turnId?: string
-): AgentCoreSSEEnvelope {
-  const type = event.type;
-  // Some legacy events (LegacyContextPrunedEvent, LegacyContextCompactedEvent) omit timestamp;
-  // fall back to Date.now() when absent.
-  const rawTimestamp: unknown =
-    "timestamp" in event ? (event as { timestamp: unknown }).timestamp : undefined;
-  const data: Record<string, unknown> = Object.fromEntries(
-    Object.entries(event as object).filter(([k]) => k !== "type" && k !== "timestamp")
-  );
-  return {
-    data,
-    sessionId,
-    timestamp: typeof rawTimestamp === "number" ? rawTimestamp : Date.now(),
-    ...(turnId != null ? { turnId } : {}),
-    type,
-  };
-}
-
-function getEventSessionId(event: AgentEvent): string | undefined {
-  if ("sessionId" in event && typeof event.sessionId === "string" && event.sessionId.length > 0) {
-    return event.sessionId;
+function openTextBlockIfNeeded(send: (data: string) => void, state: StrandsBlockState): void {
+  if (!state.messageStarted) {
+    send(messageStart());
+    state.messageStarted = true;
   }
-  return undefined;
+  if (!state.inTextBlock) {
+    state.blockIndex++;
+    send(contentBlockStart(state.blockIndex));
+    state.inTextBlock = true;
+  }
 }
 
-function sendAgentCoreEvent(
+function closeTextBlockIfOpen(send: (data: string) => void, state: StrandsBlockState): void {
+  if (state.inTextBlock) {
+    send(contentBlockStop(state.blockIndex));
+    state.inTextBlock = false;
+  }
+}
+
+/**
+ * Translate a framework AgentEvent into Strands SSE format.
+ *
+ * Strands wire format: `data: {"event":{...}}\n\n`
+ * - messageStart / messageStop — message boundaries
+ * - contentBlockStart / contentBlockDelta / contentBlockStop — content chunks
+ * - toolUseContentBlockStart / toolUseContentBlockDelta — tool invocations
+ * - metadata — usage stats
+ */
+function sendStrandsEvent(
   send: (data: string) => void,
-  state: AgentCoreSSEState,
+  state: StrandsBlockState,
   event: AgentEvent
 ): void {
-  const eventSessionId = getEventSessionId(event);
-  if (eventSessionId) {
-    state.sessionId = eventSessionId;
-  }
+  switch (event.type) {
+    case "turn.start": {
+      state.blockIndex = -1;
+      state.inTextBlock = false;
+      state.messageStarted = false;
+      send(messageStart());
+      state.messageStarted = true;
+      break;
+    }
 
-  if (event.type === "turn.start" && "turnId" in event && typeof event.turnId === "string") {
-    state.currentTurnId = event.turnId;
-  }
+    case "stream.chunk": {
+      openTextBlockIfNeeded(send, state);
+      send(contentBlockDelta(state.blockIndex, event.content));
+      break;
+    }
 
-  send(
-    formatSSEMessage({
-      data: createAgentCoreEnvelope(event, state.sessionId, state.currentTurnId),
-      event: event.type,
-    })
-  );
+    case "tool.call": {
+      closeTextBlockIfOpen(send, state);
+      if (!state.messageStarted) {
+        send(messageStart());
+        state.messageStarted = true;
+      }
+      state.blockIndex++;
+      send(toolUseContentBlockStart(state.blockIndex, event.toolUseId, event.toolName));
+      send(
+        toolUseContentBlockDelta(
+          state.blockIndex,
+          typeof event.args === "string" ? event.args : JSON.stringify(event.args)
+        )
+      );
+      send(contentBlockStop(state.blockIndex));
+      break;
+    }
 
-  if (event.type === "turn.end") {
-    state.currentTurnId = undefined;
+    case "agent.complete": {
+      if (event.usage) {
+        const inputTokens = event.usage.totalInputTokens;
+        const outputTokens = event.usage.totalOutputTokens;
+        send(
+          metadata({
+            inputTokens,
+            outputTokens,
+            totalTokens: inputTokens + outputTokens,
+          })
+        );
+      }
+      break;
+    }
+
+    case "turn.end": {
+      closeTextBlockIfOpen(send, state);
+      if (state.messageStarted) {
+        send(messageStop("end_turn"));
+        state.messageStarted = false;
+      }
+      break;
+    }
+
+    // Events with no Strands equivalent — skip silently
+    case "session.start":
+    case "session.end":
+    case "stream.start":
+    case "stream.end":
+    case "tool.result":
+    case "tool.progress":
+    case "tool.stream.chunk":
+    case "agent.thinking":
+    case "agent.transition":
+      break;
+
+    // All other events (graph, checkpoint, etc.) — skip
+    default:
+      break;
   }
 }
 
-function createAgentCoreEventHandler(
+function createStrandsEventHandler(
   send: (data: string) => void,
   isAborted: () => boolean,
   close: () => void,
-  state: AgentCoreSSEState
+  state: StrandsBlockState
 ): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
     if (isAborted()) {
       return;
     }
 
-    sendAgentCoreEvent(send, state, event);
+    sendStrandsEvent(send, state, event);
     if (event.type === "session.end") {
-      state.sessionEnded = true;
       close();
     }
   };
@@ -153,34 +209,25 @@ export function serveAgentCore(
       return providerResult.response;
     }
 
-    // Protocol-specific callbacks stay at the edge; orchestration is shared.
     return runAgentStream({
       agent: a,
       buildCallbacks: ({ close, isAborted, send }) => {
-        const state = {
-          sessionEnded: false,
-          sessionId: parsed.sessionId ?? crypto.randomUUID(),
+        const state: StrandsBlockState = {
+          blockIndex: -1,
+          inTextBlock: false,
+          messageStarted: false,
         };
         return {
           onError: (error) => {
-            sendAgentCoreEvent(send, state, {
-              message: error instanceof Error ? getErrorMessage(error) : String(error),
-              timestamp: Date.now(),
-              type: "agent.error",
-            });
-            if (!state.sessionEnded) {
-              const failedEnd: SessionEndEvent = {
-                sessionId: state.sessionId,
-                status: "failed",
-                timestamp: Date.now(),
-                type: "session.end",
-              };
-              sendAgentCoreEvent(send, state, failedEnd);
-              state.sessionEnded = true;
+            // On error: close any open blocks, emit messageStop, then close stream
+            closeTextBlockIfOpen(send, state);
+            if (state.messageStarted) {
+              send(messageStop("error"));
+              state.messageStarted = false;
             }
             close();
           },
-          onEvent: createAgentCoreEventHandler(send, isAborted, close, state),
+          onEvent: createStrandsEventHandler(send, isAborted, close, state),
         };
       },
       input: parsed.input,
