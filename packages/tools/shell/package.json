@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-shell",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Shell execution tool for @obsku/framework",
   "keywords": [
     "obsku",

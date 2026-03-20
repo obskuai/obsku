@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-code-interpreter-agentcore",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "AWS Bedrock AgentCore code interpreter for @obsku/framework",
   "keywords": [
     "obsku",
@@ -49,8 +49,8 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-bedrock-agentcore": "^3.781.0",
-    "@obsku/framework": ">=0.1.0",
-    "@obsku/tool-code-interpreter": ">=0.1.0"
+    "@obsku/framework": ">=0.2.0",
+    "@obsku/tool-code-interpreter": ">=1.0.0"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-bedrock-agentcore": {
