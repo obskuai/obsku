@@ -45,9 +45,25 @@ describe("npm packaging", () => {
         failures.push(`${pkgPath}/package.json "files" missing "dist/"`);
       }
 
-      // Check that src/ is NOT included (source shouldn't be published)
-      if (pkg.files.includes("src/")) {
-        failures.push(`${pkgPath}/package.json "files" should not include "src/"`);
+      const hasBunSrcExport =
+        pkg.exports &&
+        Object.values(pkg.exports).some(
+          (v: unknown) =>
+            typeof v === "object" &&
+            v !== null &&
+            "bun" in v &&
+            typeof (v as Record<string, string>).bun === "string" &&
+            (v as Record<string, string>).bun.startsWith("./src/")
+        );
+      if (pkg.files.includes("src/") && !hasBunSrcExport) {
+        failures.push(
+          `${pkgPath}/package.json "files" should not include "src/" (no bun export condition)`
+        );
+      }
+      if (!pkg.files.includes("src/") && hasBunSrcExport) {
+        failures.push(
+          `${pkgPath}/package.json "files" must include "src/" (bun export conditions reference src/)`
+        );
       }
 
       // Check that package.json is included

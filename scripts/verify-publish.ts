@@ -101,28 +101,98 @@ function checkFile(pkgPath: string, field: string, value: string): string | null
   return null;
 }
 
+/**
+ * Check whether a relative file path (e.g. "./src/index.ts") would be included
+ * in the npm tarball given the package's "files" allowlist.
+ *
+ * npm "files" semantics:
+ *   - "dist/"  → includes everything under dist/
+ *   - "dist"   → same as "dist/" (directory)
+ *   - package.json, README, LICENSE are always included regardless of "files"
+ */
+function isCoveredByFiles(filePath: string, files: Array<string>): boolean {
+  const alwaysIncluded = ["package.json", "readme", "license", "licence", "changelog"];
+  const normalised = filePath.replace(/^\.\//, "").toLowerCase();
+  if (alwaysIncluded.some((f) => normalised === f || normalised.startsWith(`${f}.`))) {
+    return true;
+  }
+
+  const targetPath = filePath.replace(/^\.\//, "");
+  for (const pattern of files) {
+    const prefix = pattern.replace(/\/+$/, "");
+    if (targetPath === prefix || targetPath.startsWith(`${prefix}/`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function collectExportPaths(
+  exports: Record<string, string | Record<string, string>>
+): Array<{ field: string; path: string }> {
+  const paths: Array<{ field: string; path: string }> = [];
+  for (const [exportKey, conditions] of Object.entries(exports)) {
+    if (typeof conditions === "string") {
+      paths.push({ field: `exports['${exportKey}']`, path: conditions });
+    } else if (typeof conditions === "object" && conditions !== null) {
+      for (const [condName, condTarget] of Object.entries(conditions)) {
+        if (typeof condTarget === "string") {
+          paths.push({ field: `exports['${exportKey}'].${condName}`, path: condTarget });
+        }
+      }
+    }
+  }
+  return paths;
+}
+
 function collectExportFailures(
   pkgPath: string,
   exports: Record<string, string | Record<string, string>>
 ): Array<string> {
   const failures: Array<string> = [];
-  for (const [exportKey, conditions] of Object.entries(exports)) {
-    if (typeof conditions === "string") {
-      const err = checkFile(pkgPath, `exports['${exportKey}']`, conditions);
-      if (err) {
-        failures.push(err);
-      }
-    } else if (typeof conditions === "object" && conditions !== null) {
-      for (const [condName, condTarget] of Object.entries(conditions)) {
-        if (typeof condTarget === "string") {
-          const err = checkFile(pkgPath, `exports['${exportKey}'].${condName}`, condTarget);
-          if (err) {
-            failures.push(err);
-          }
-        }
+  for (const { field, path } of collectExportPaths(exports)) {
+    const err = checkFile(pkgPath, field, path);
+    if (err) {
+      failures.push(err);
+    }
+  }
+  return failures;
+}
+
+/**
+ * Verify every path in exports/main/types is covered by "files" allowlist.
+ * Catches the case where a file exists on disk but would be missing from the npm tarball.
+ */
+function collectFilesCoverageFailures(pkg: PackageManifest): Array<string> {
+  const files = pkg.files;
+  if (!Array.isArray(files) || files.length === 0) {
+    return [];
+  }
+
+  const failures: Array<string> = [];
+
+  if (pkg.main && !isCoveredByFiles(pkg.main, files)) {
+    failures.push(
+      `main '${pkg.main}' is NOT covered by files ${JSON.stringify(files)} — will be missing from npm tarball`
+    );
+  }
+
+  if (pkg.types && !isCoveredByFiles(pkg.types, files)) {
+    failures.push(
+      `types '${pkg.types}' is NOT covered by files ${JSON.stringify(files)} — will be missing from npm tarball`
+    );
+  }
+
+  if (pkg.exports) {
+    for (const { field, path } of collectExportPaths(pkg.exports)) {
+      if (!isCoveredByFiles(path, files)) {
+        failures.push(
+          `${field} '${path}' is NOT covered by files ${JSON.stringify(files)} — will be missing from npm tarball`
+        );
       }
     }
   }
+
   return failures;
 }
 
@@ -194,6 +264,11 @@ for (const entry of MATRIX) {
     const exportFailures = collectExportFailures(entry.path, pkg.exports);
     failures.push(...exportFailures);
   }
+
+  // 5. All exports/main/types paths must be covered by 'files' allowlist
+  //    (catches: file exists on disk but would be missing from npm tarball)
+  const coverageFailures = collectFilesCoverageFailures(pkg);
+  failures.push(...coverageFailures);
 
   if (failures.length === 0) {
     console.log(`PASS  ${entry.name}`);
