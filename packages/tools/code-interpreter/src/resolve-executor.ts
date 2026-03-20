@@ -45,11 +45,14 @@ interface ResolveExecutorDeps {
 }
 
 const loadAgentcoreModule = async (): Promise<AgentCoreModule> => {
-  // @ts-expect-error - optional peer dependency
-  const mod = await import("@obsku/tool-code-interpreter-agentcore");
-  // @ts-expect-error - optional peer dependency
-  const { BedrockAgentCoreClient } = await import("@aws-sdk/client-bedrock-agentcore");
-  return { ...mod, BedrockAgentCoreClient };
+  const agentcoreId = "@obsku/tool-code-interpreter-agentcore";
+  const awsSdkId = "@aws-sdk/client-bedrock-agentcore";
+  const mod = (await import(agentcoreId)) as Record<string, unknown>;
+  const awsSdk = (await import(awsSdkId)) as Record<string, unknown>;
+  return {
+    ...mod,
+    BedrockAgentCoreClient: awsSdk.BedrockAgentCoreClient,
+  } as unknown as AgentCoreModule;
 };
 
 const loadWasmModule = async (): Promise<WasmModule> => {
