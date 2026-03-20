@@ -113,6 +113,3 @@ See [`packages/framework/README.md`](./packages/framework/README.md) for full do
 
 **Current**: Framework P12 complete. 3182 pass 0 fail (232 skip).
 APIs stabilizing, not yet 1.0.
-
-## Safety
-Authorized security testing only.
