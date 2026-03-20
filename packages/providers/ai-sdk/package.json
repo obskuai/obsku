@@ -27,7 +27,7 @@
     "url": "git+https://github.com/obskuai/obsku.git",
     "directory": "packages/providers/ai-sdk"
   },
-  "author": "obsku",
+  "author": "Obsku Team <team@obsku.dev>",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

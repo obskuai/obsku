@@ -18,7 +18,7 @@
     "url": "git+https://github.com/obskuai/obsku.git",
     "directory": "packages/adapters/claude-code"
   },
-  "author": "obsku",
+  "author": "Obsku Team <team@obsku.dev>",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/src/index.d.ts",
@@ -29,7 +29,7 @@
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun \u0026\u0026 rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "build": "bun build src/index.ts --outdir dist --target bun && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
     "test": "bun test",
     "typecheck": "tsgo --noEmit",
     "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
@@ -53,6 +53,6 @@
     "access": "public"
   },
   "engines": {
-    "node": "\u003e=18.0.0"
+    "node": ">=18.0.0"
   }
 }

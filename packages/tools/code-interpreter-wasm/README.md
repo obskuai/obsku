@@ -1,8 +1,7 @@
 # @obsku/tool-code-interpreter-wasm
 
-WASM sandboxed code interpreter for @obsku/framework.
+WASM-sandboxed code interpreter for @obsku/framework. Runs Python (via Pyodide) and JavaScript (via QuickJS) in a WebAssembly sandbox with no host process access.
 
-This package is internal-only. It has large runtime dependencies and is not the recommended public default.
 
 ## Installation
 

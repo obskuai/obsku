@@ -25,7 +25,7 @@
     "url": "git+https://github.com/obskuai/obsku.git",
     "directory": "packages/adapters/agent-server"
   },
-  "author": "obsku",
+  "author": "Obsku Team <team@obsku.dev>",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/src/index.d.ts",

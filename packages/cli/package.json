@@ -22,7 +22,7 @@
     "url": "git+https://github.com/obskuai/obsku.git",
     "directory": "packages/cli"
   },
-  "author": "obsku",
+  "author": "Obsku Team <team@obsku.dev>",
   "type": "module",
   "bin": {
     "obsku": "./dist/index.js"
