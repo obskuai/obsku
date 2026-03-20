@@ -1,5 +1,12 @@
 # @obsku/tool-fs
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [ed41827]
+  - @obsku/framework@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

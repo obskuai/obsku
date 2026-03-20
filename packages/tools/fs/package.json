@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-fs",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Filesystem tool for @obsku/framework",
   "keywords": [
     "obsku",

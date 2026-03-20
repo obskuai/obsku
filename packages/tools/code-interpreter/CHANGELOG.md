@@ -1,5 +1,14 @@
 # @obsku/tool-code-interpreter
 
+## 1.0.2
+
+### Patch Changes
+
+- ed41827: fix: include src/ in published files for bun export conditions
+- Updated dependencies [ed41827]
+  - @obsku/framework@0.2.2
+  - @obsku/tool-code-interpreter-wasm@0.2.2
+
 ## 1.0.1
 
 ### Patch Changes

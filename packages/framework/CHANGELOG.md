@@ -1,5 +1,11 @@
 # @obsku/framework
 
+## 0.2.2
+
+### Patch Changes
+
+- ed41827: fix: include src/ in published files for bun export conditions
+
 ## 0.2.1
 
 ### Patch Changes
