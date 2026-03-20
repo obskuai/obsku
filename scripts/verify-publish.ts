@@ -72,11 +72,10 @@ const MATRIX: Array<PackageEntry> = [
     path: "packages/tools/code-interpreter-agentcore",
     publishable: true,
   },
-  // WASM bundle is internal-only (~100MB pyodide + quickjs, no files allowlist, no prepack hook)
   {
     name: "@obsku/tool-code-interpreter-wasm",
     path: "packages/tools/code-interpreter-wasm",
-    publishable: false,
+    publishable: true,
   },
   { name: "@obsku/tool-fs", path: "packages/tools/fs", publishable: true },
   { name: "@obsku/tool-search", path: "packages/tools/search", publishable: true },

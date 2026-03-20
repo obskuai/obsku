@@ -1,7 +1,7 @@
 {
   "name": "@obsku/tool-code-interpreter-wasm",
   "version": "0.1.0",
-  "description": "WASM sandboxed code interpreter for @obsku/framework (internal-only)",
+  "description": "WASM sandboxed code interpreter for @obsku/framework",
   "keywords": [
     "obsku",
     "agent",
@@ -33,14 +33,18 @@
     "README.md",
     "LICENSE"
   ],
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --external @obsku/tool-code-interpreter-agentcore --external @aws-sdk/client-bedrock-agentcore --external @obsku/tool-code-interpreter-wasm && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
     "test": "bun test",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../../scripts/restore-workspace-deps.ts"
   },
   "dependencies": {
     "@obsku/tool-code-interpreter": "workspace:*",

@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@obsku/tool-code-interpreter-wasm"]
+  "ignore": []
 }
