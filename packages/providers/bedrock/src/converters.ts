@@ -20,7 +20,9 @@ export function toBedrockMessages(messages: Array<Message>): Array<BedrockMessag
     .map((msg) => ({
       content: msg.content
         // Filter out empty text blocks — Bedrock rejects blank text fields
-        .filter((block: ContentBlock) => !(block.type === BlockType.TEXT && block.text.trim() === ""))
+        .filter(
+          (block: ContentBlock) => !(block.type === BlockType.TEXT && block.text.trim() === "")
+        )
         .map((block: ContentBlock) => {
           switch (block.type) {
             case BlockType.TEXT:

@@ -148,7 +148,10 @@ export function extractJsonFromText(text: string): unknown | null {
  * @param value - JSON string to parse
  * @returns Parse result with data or error message
  */
-export function safeJsonParse<T = unknown>(value: string, validate?: (v: unknown) => T): JsonParseResult<T> {
+export function safeJsonParse<T = unknown>(
+  value: string,
+  validate?: (v: unknown) => T
+): JsonParseResult<T> {
   try {
     const parsed: unknown = JSON.parse(value);
     const data = validate ? validate(parsed) : (parsed as T);

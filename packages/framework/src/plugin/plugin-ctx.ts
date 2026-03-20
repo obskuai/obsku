@@ -5,13 +5,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { execCmd } from "../exec";
 import { DEFAULTS } from "../defaults";
-import type {
-  Logger,
-  PluginCtx,
-  ToolCallContext,
-  ToolMiddleware,
-  ToolResult,
-} from "../types";
+import type { Logger, PluginCtx, ToolCallContext, ToolMiddleware, ToolResult } from "../types";
 
 const hookDepthStorage =
   typeof AsyncLocalStorage === "function" ? new AsyncLocalStorage<number>() : undefined;
@@ -81,10 +75,16 @@ function writeToStream(stream: NodeJS.WriteStream, ...msgs: Array<unknown>): voi
 const isDebug = () => Boolean(process.env.OBSKU_DEBUG);
 
 export const defaultLogger: Logger = {
-  debug: (...msgs) => { if (isDebug()) writeToStream(process.stdout, ...msgs); },
+  debug: (...msgs) => {
+    if (isDebug()) writeToStream(process.stdout, ...msgs);
+  },
   error: (...msgs) => writeToStream(process.stderr, ...msgs),
-  info: (...msgs) => { if (isDebug()) writeToStream(process.stdout, ...msgs); },
-  warn: (...msgs) => { if (isDebug()) writeToStream(process.stderr, ...msgs); },
+  info: (...msgs) => {
+    if (isDebug()) writeToStream(process.stdout, ...msgs);
+  },
+  warn: (...msgs) => {
+    if (isDebug()) writeToStream(process.stderr, ...msgs);
+  },
 };
 
 export function createLogger(pluginName: string, baseLogger: Logger = defaultLogger): Logger {
@@ -129,7 +129,6 @@ export function createPluginCtx(
     signal,
   };
 }
-
 
 export function createToolCallContext(
   runtime: ToolCallRuntime,

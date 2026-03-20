@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { VectorDimensionError, EmbeddingDeserializationError, deserializeEmbedding, serializeEmbedding } from "../../src/checkpoint/similarity";
+import {
+  VectorDimensionError,
+  EmbeddingDeserializationError,
+  deserializeEmbedding,
+  serializeEmbedding,
+} from "../../src/checkpoint/similarity";
 
 describe("VectorDimensionError", () => {
   it("should extend Error", () => {
@@ -128,23 +133,17 @@ describe("deserializeEmbedding", () => {
 
   it("should throw EmbeddingDeserializationError on invalid JSON string", () => {
     const invalid = "not valid json {";
-    expect(() => deserializeEmbedding(invalid)).toThrow(
-      EmbeddingDeserializationError
-    );
+    expect(() => deserializeEmbedding(invalid)).toThrow(EmbeddingDeserializationError);
   });
 
   it("should throw EmbeddingDeserializationError on malformed numeric array", () => {
     const invalidEmbedding = JSON.stringify([1, "not a number", 3]);
-    expect(() => deserializeEmbedding(invalidEmbedding)).toThrow(
-      EmbeddingDeserializationError
-    );
+    expect(() => deserializeEmbedding(invalidEmbedding)).toThrow(EmbeddingDeserializationError);
   });
 
   it("should throw EmbeddingDeserializationError on non-array JSON", () => {
     const nonArray = JSON.stringify({ x: 1, y: 2 });
-    expect(() => deserializeEmbedding(nonArray)).toThrow(
-      EmbeddingDeserializationError
-    );
+    expect(() => deserializeEmbedding(nonArray)).toThrow(EmbeddingDeserializationError);
   });
 
   it("should return empty array for empty array JSON", () => {

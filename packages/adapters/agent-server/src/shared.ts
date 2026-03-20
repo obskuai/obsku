@@ -134,7 +134,7 @@ export function createSSEStream(
         if (!aborted && !closed) {
           try {
             controller.close();
-        } catch (error: unknown) {
+          } catch (error: unknown) {
             writeErr(`[SSE] controller.close failed in finally: ${String(error)}\n`);
           }
         }

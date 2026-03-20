@@ -137,7 +137,6 @@ export class WasmExecutor implements CodeExecutor {
     return this.quickJSRuntime;
   }
 
-
   private async executeInSession(
     sessionId: string,
     options: ExecutionOptions,
@@ -214,6 +213,5 @@ export class WasmExecutor implements CodeExecutor {
     if (result.outputFiles.size === 0) {
       result.outputFiles = undefined;
     }
-}
-
+  }
 }

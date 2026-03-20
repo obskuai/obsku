@@ -76,7 +76,9 @@ export function parseEntitiesFromResponse(
   const parsed = parseJsonArrayFromText(text, "entities", logger);
 
   return parsed.flatMap((raw) => {
-    if (!isValidRawEntity(raw)) {return [];}
+    if (!isValidRawEntity(raw)) {
+      return [];
+    }
     return [
       {
         attributes: parseAttributes(raw.attributes, logger),
@@ -162,7 +164,9 @@ export function parseFactsFromResponse(
   const parsed = parseJsonArrayFromText(text, "facts", logger);
 
   return parsed.flatMap((raw) => {
-    if (!isValidRawFact(raw)) {return [];}
+    if (!isValidRawFact(raw)) {
+      return [];
+    }
     return [
       {
         confidence: normalizeConfidence(raw.confidence),

@@ -130,7 +130,13 @@ export class LocalProcessExecutor implements CodeExecutor {
       const { args, cmd } = commandForLanguage(language);
       const filteredEnv = filterEnvVars(process.env, this.envFilter, "code-interpreter");
       const startTime = Date.now();
-      const proc = await runProcess(cmd, [...args, codeFile], workspace.dir, timeoutMs, filteredEnv);
+      const proc = await runProcess(
+        cmd,
+        [...args, codeFile],
+        workspace.dir,
+        timeoutMs,
+        filteredEnv
+      );
       const executionTimeMs = Date.now() - startTime;
 
       const rawOutputFiles = await workspace.collectOutputFiles(inputFileNames);

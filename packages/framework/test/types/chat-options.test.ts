@@ -3,13 +3,7 @@
 // They will FAIL initially until we add the type definitions
 
 import { describe, expect, it } from "bun:test";
-import type {
-  ChatOptions,
-  LLMProvider,
-  Message,
-  ResponseFormat,
-  ToolDef,
-} from "../../src/index";
+import type { ChatOptions, LLMProvider, Message, ResponseFormat, ToolDef } from "../../src/index";
 
 describe("ChatOptions Types", () => {
   describe("ResponseFormat interface", () => {

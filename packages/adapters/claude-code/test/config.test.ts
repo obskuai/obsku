@@ -93,7 +93,9 @@ describe("buildClaudeInvocationConfig", () => {
       };
       const result = buildClaudeInvocationConfig(config);
 
-      expect(result.allowedTools).toEqual(CLAUDE_CODE_DEFAULT_ALLOWED_TOOLS as unknown as Array<string>);
+      expect(result.allowedTools).toEqual(
+        CLAUDE_CODE_DEFAULT_ALLOWED_TOOLS as unknown as Array<string>
+      );
     });
 
     it("should deduplicate extra tools", () => {

@@ -25,7 +25,11 @@ async function loadAwsSdk(agentName: string): Promise<AwsSdkModule> {
     const mod = await import("@aws-sdk/client-bedrock-agentcore" as string);
     return mod as AwsSdkModule;
   } catch (error: unknown) {
-    throw new RemoteAgentError(agentName, `Failed to load AWS SDK: ${getErrorMessage(error)}`, error);
+    throw new RemoteAgentError(
+      agentName,
+      `Failed to load AWS SDK: ${getErrorMessage(error)}`,
+      error
+    );
   }
 }
 

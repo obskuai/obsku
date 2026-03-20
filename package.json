@@ -18,7 +18,7 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
     "format": "bunx biome format --write .",
-    "check": "bunx biome format --check .",
+    "check": "bunx biome ci --linter-enabled=false --assist-enabled=false .",
     "verify:hygiene": "bun run scripts/verify-hygiene.ts",
     "verify:publish": "bun run scripts/verify-publish.ts",
     "changeset": "changeset"

@@ -10,7 +10,10 @@ export interface InMemoryState {
   sessions: Map<string, Session>;
 }
 
-export type SaveEntityInput = Omit<Entity, "id" | "createdAt" | "updatedAt" | "attributes" | "embedding" | "relationships"> & {
+export type SaveEntityInput = Omit<
+  Entity,
+  "id" | "createdAt" | "updatedAt" | "attributes" | "embedding" | "relationships"
+> & {
   attributes: string;
   createdAt: number;
   embedding?: string | null;

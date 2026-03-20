@@ -42,7 +42,7 @@ export class S3Uploader {
    * @returns Array of upload results with S3 URLs
    */
   async upload(
-    files: Array<{ content?: Uint8Array; path: string; }>,
+    files: Array<{ content?: Uint8Array; path: string }>,
     stdout: string,
     sessionId: string
   ): Promise<Array<UploadResult>> {
@@ -120,7 +120,10 @@ export class S3Uploader {
    * Upload execution result files and annotate stdout with S3 URLs.
    */
   async uploadResult(result: ExecutionResult, sessionId: string): Promise<ExecutionResult> {
-    const files = Array.from(result.outputFiles?.entries() ?? []).map(([path, content]) => ({ content, path }));
+    const files = Array.from(result.outputFiles?.entries() ?? []).map(([path, content]) => ({
+      content,
+      path,
+    }));
     try {
       const uploadResults = await this.upload(files, result.stdout, sessionId);
       debugLog(`s3_upload_summary: session=${sessionId} files=${uploadResults.length}`);

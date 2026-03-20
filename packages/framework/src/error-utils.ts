@@ -54,7 +54,10 @@ export function getErrorStack(error: unknown): string | undefined {
  */
 export type ErrorClass = "provider_instability" | "framework_regression";
 
-function extractHttpStatus(record: Record<string, unknown> | undefined, metadata: Record<string, unknown> | undefined): number | undefined {
+function extractHttpStatus(
+  record: Record<string, unknown> | undefined,
+  metadata: Record<string, unknown> | undefined
+): number | undefined {
   if (typeof metadata?.["httpStatusCode"] === "number") return metadata["httpStatusCode"];
   if (typeof record?.["statusCode"] === "number") return record["statusCode"];
   if (typeof record?.["status"] === "number") return record["status"];

@@ -18,7 +18,6 @@ export function isAsyncIterable<T>(v: unknown): v is AsyncIterable<T> {
   return v != null && typeof v === "object" && Symbol.asyncIterator in v;
 }
 
-
 /**
  * Assert that a value is of type never (exhaustive switch check).
  * Throws an error at runtime if reached, and causes TypeScript compile error

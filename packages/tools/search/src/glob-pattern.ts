@@ -40,7 +40,17 @@ export function globMatch(filePath: string, pattern: string): boolean {
     } else if (c === ".") {
       regexStr += String.raw`\.`;
       i++;
-    } else if (c === "$" || c === "^" || c === "+" || c === "|" || c === "(" || c === ")" || c === "{" || c === "}" || c === "[") {
+    } else if (
+      c === "$" ||
+      c === "^" ||
+      c === "+" ||
+      c === "|" ||
+      c === "(" ||
+      c === ")" ||
+      c === "{" ||
+      c === "}" ||
+      c === "["
+    ) {
       regexStr += "\\" + c;
       i++;
     } else {

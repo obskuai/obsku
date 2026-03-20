@@ -11,8 +11,6 @@ import { matchSinglePattern } from "@obsku/framework/security";
 import { escapeRegex } from "@obsku/framework";
 export { escapeRegex };
 
-
-
 /** Returns true if `name` matches the include `pattern`. */
 export function matchesInclude(name: string, pattern: string): boolean {
   return matchSinglePattern(name, pattern, false);

@@ -67,6 +67,7 @@ tmp/
 
 # Repo hygiene
 .sisyphus/
+.sisphus/
 *.db
 *.service
 *.workspace-backup

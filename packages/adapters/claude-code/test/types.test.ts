@@ -1,9 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type {
-  ClaudeCodeMode,
-  ClaudeCodePluginParams,
-  ClaudeCodeSchemaObject,
-} from "../src/types";
+import type { ClaudeCodeMode, ClaudeCodePluginParams, ClaudeCodeSchemaObject } from "../src/types";
 
 describe("ClaudeCodePluginParams validation", () => {
   describe("prompt field", () => {

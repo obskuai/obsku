@@ -8,6 +8,12 @@ const STOP_REASON_MAP: Record<string, LLMResponse["stopReason"]> = {
   length: "max_tokens",
 };
 
-export function mapAiSdkStopReason(reason: string | FinishReason | undefined): LLMResponse["stopReason"] {
-  return STOP_REASON_MAP[reason ?? "stop"] ?? ((reason as LLMResponse["stopReason"] | undefined) ?? "end_turn");
+export function mapAiSdkStopReason(
+  reason: string | FinishReason | undefined
+): LLMResponse["stopReason"] {
+  return (
+    STOP_REASON_MAP[reason ?? "stop"] ??
+    (reason as LLMResponse["stopReason"] | undefined) ??
+    "end_turn"
+  );
 }

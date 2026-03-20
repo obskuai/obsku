@@ -10,7 +10,6 @@ import type {
 const DEFAULT_TIMEOUT_MS = DEFAULTS.toolTimeout;
 const TIMEOUT_EXIT_CODE = -1;
 
-
 function normalizeExecutionError(error: unknown): ShellExecutionResult {
   return {
     exitCode: 1,

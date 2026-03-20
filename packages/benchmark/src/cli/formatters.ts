@@ -18,7 +18,9 @@ export function fmtDelta(delta: number): string {
   return (delta >= 0 ? "+" : "") + delta.toFixed(3);
 }
 
-export function fmtTokens(usage: { inputTokens?: number; outputTokens?: number } | undefined): string {
+export function fmtTokens(
+  usage: { inputTokens?: number; outputTokens?: number } | undefined
+): string {
   if (!usage) return "";
   return ` tokens=${usage.inputTokens ?? 0}in/${usage.outputTokens ?? 0}out`;
 }

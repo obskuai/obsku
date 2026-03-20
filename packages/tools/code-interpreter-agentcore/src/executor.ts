@@ -10,10 +10,7 @@ import { attachCleanupError, buildExecutionResult, buildFailureResult } from "./
 import { startSession, stopSession } from "./executor-session";
 import { runExecutionStages } from "./executor-stage-orchestration";
 import { uploadResultToS3 } from "./executor-upload";
-import {
-  collectStructuredContent as collectContentStream,
-  type StructuredContent,
-} from "./parser";
+import { collectStructuredContent as collectContentStream, type StructuredContent } from "./parser";
 import type { S3UploadConfig } from "./s3-uploader";
 import type {
   AgentCoreExecutionResult,
@@ -46,7 +43,9 @@ export class AgentCoreExecutor implements CodeExecutor {
   }
 
   async execute(options: ExecutionOptions): Promise<AgentCoreExecutionResult> {
-    const abortSignal = AbortSignal.timeout(options.timeoutMs ?? DEFAULTS.codeInterpreterExecTimeout);
+    const abortSignal = AbortSignal.timeout(
+      options.timeoutMs ?? DEFAULTS.codeInterpreterExecTimeout
+    );
     let sessionId: string | undefined;
 
     try {

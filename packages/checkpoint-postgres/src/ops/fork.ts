@@ -69,7 +69,9 @@ async function queryRowOrThrow<Row extends Record<string, unknown>, T>(
   map: (row: Row) => T
 ): Promise<T> {
   const result = await db.query<Row>(sql, params);
-  if (result.rows.length === 0) {throw onEmpty();}
+  if (result.rows.length === 0) {
+    throw onEmpty();
+  }
   return map(result.rows[0] as Row);
 }
 

@@ -7,8 +7,6 @@ import type { LLMResponse } from "@obsku/framework";
 import { fromBedrockContent, mapStopReason } from "./converters";
 import { mapAwsError } from "./errors";
 
-
-
 function mapBedrockResponse(response: ConverseCommandOutput): LLMResponse {
   return {
     content: fromBedrockContent(response.output?.message?.content ?? []),

@@ -3,8 +3,6 @@ import type { JsonSchema } from "../types/json-schema";
 import type { McpProvider, PluginDef, PluginRunOutput } from "../types";
 import { isRecord } from "../utils/type-guards";
 
-
-
 const JSON_TYPE_TO_ZOD: Record<string, () => z.ZodTypeAny> = {
   boolean: () => z.boolean(),
   integer: () => z.number().int(),

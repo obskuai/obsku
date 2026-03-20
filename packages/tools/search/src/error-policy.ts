@@ -12,8 +12,12 @@ export type IoErrorClass = "skip" | "warn" | "surface";
 export function classifyIoError(error: unknown): IoErrorClass {
   if (error && typeof error === "object" && "code" in error) {
     const code = (error as { code: string }).code;
-    if (code === "ENOENT") {return "skip";}
-    if (code === "EACCES" || code === "EMFILE") {return "warn";}
+    if (code === "ENOENT") {
+      return "skip";
+    }
+    if (code === "EACCES" || code === "EMFILE") {
+      return "warn";
+    }
   }
   return "surface";
 }

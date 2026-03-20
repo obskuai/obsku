@@ -1,11 +1,7 @@
 import { DEFAULTS, plugin } from "@obsku/framework";
 import { z } from "zod";
 import { SandboxedShellExecutor } from "./executor";
-import type {
-  SandboxedShellOptions,
-  ShellExecutionOptions,
-  ShellExecutionResult,
-} from "./types";
+import type { SandboxedShellOptions, ShellExecutionOptions, ShellExecutionResult } from "./types";
 
 /**
  * Default options for sandboxed shell execution

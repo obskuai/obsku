@@ -708,8 +708,6 @@ describe("chatWithFallback", () => {
   test("falls back when structured output fails with ValidationException", async () => {
     const cache = new Map<string, boolean>();
 
-
-
     let callCount = 0;
     const mockSend = () => {
       callCount++;
@@ -728,7 +726,13 @@ describe("chatWithFallback", () => {
 
     const buildCommand = (includeOutput: boolean) => ({ input: { includeOutput } }) as any;
 
-    const result = await chatWithFallback(mockClient, buildCommand, true, "fallback-test-model", cache);
+    const result = await chatWithFallback(
+      mockClient,
+      buildCommand,
+      true,
+      "fallback-test-model",
+      cache
+    );
 
     expect(callCount).toBe(2);
     expect(result.content).toEqual([{ text: "fallback response", type: "text" }]);
@@ -764,9 +768,9 @@ describe("chatWithFallback", () => {
 
     const buildCommand = (_includeOutput: boolean) => ({ input: {} }) as any;
 
-    await expect(chatWithFallback(mockClient, buildCommand, false, "test-model-3", new Map())).rejects.toThrow(
-      BedrockError
-    );
+    await expect(
+      chatWithFallback(mockClient, buildCommand, false, "test-model-3", new Map())
+    ).rejects.toThrow(BedrockError);
   });
 
   test("maps non-Error objects to unknown error", async () => {
@@ -777,9 +781,9 @@ describe("chatWithFallback", () => {
 
     const buildCommand = (_includeOutput: boolean) => ({ input: {} }) as any;
 
-    await expect(chatWithFallback(mockClient, buildCommand, false, "test-model-4", new Map())).rejects.toThrow(
-      BedrockError
-    );
+    await expect(
+      chatWithFallback(mockClient, buildCommand, false, "test-model-4", new Map())
+    ).rejects.toThrow(BedrockError);
   });
 });
 

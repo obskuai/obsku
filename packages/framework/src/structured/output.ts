@@ -6,7 +6,7 @@ import type { ParseResult } from "../parse-contract";
  * Error thrown when LLM output fails Zod validation.
  * Public error pattern: extends Error + readonly _tag.
  */
- export class StructuredOutputError extends Error {
+export class StructuredOutputError extends Error {
   readonly _tag = "StructuredOutputError" as const;
   constructor(
     readonly validationErrors: Array<string>,

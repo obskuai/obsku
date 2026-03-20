@@ -49,8 +49,14 @@ export async function parseJsonRpcResponse(
     }
     return result.data;
   } catch (error: unknown) {
-    if (error instanceof RemoteAgentError) {throw error;}
-    throw new RemoteAgentError(agentName, `Invalid JSON response: ${getErrorMessage(error)}`, error);
+    if (error instanceof RemoteAgentError) {
+      throw error;
+    }
+    throw new RemoteAgentError(
+      agentName,
+      `Invalid JSON response: ${getErrorMessage(error)}`,
+      error
+    );
   }
 }
 

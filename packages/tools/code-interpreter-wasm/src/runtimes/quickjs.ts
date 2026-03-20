@@ -117,14 +117,14 @@ export class QuickJSRuntime extends AbstractWasmRuntime<QuickJSContextState> {
       const execStart = Date.now();
       try {
         const jsCode = this.transpiler.transformSync(code);
-      // Phase 2: apply memory cap and deadline interrupt (edge cases: memory OOM
-      //          surfaces as a thrown exception; deadline fires via interrupt handler).
+        // Phase 2: apply memory cap and deadline interrupt (edge cases: memory OOM
+        //          surfaces as a thrown exception; deadline fires via interrupt handler).
         runtime.setMemoryLimit(memoryLimitMb * 1024 * 1024);
 
         const deadline = Date.now() + timeoutMs;
         runtime.setInterruptHandler(shouldInterruptAfterDeadline(deadline));
 
-      // Phase 3: install per-call console shim for stdout/stderr capture.
+        // Phase 3: install per-call console shim for stdout/stderr capture.
         this.installConsole(
           context,
           (line) => {
@@ -135,9 +135,9 @@ export class QuickJSRuntime extends AbstractWasmRuntime<QuickJSContextState> {
           }
         );
 
-      // Phase 4: install input files as __files__ global, then eval.
-      // evalCode() returns result-or-error; errors do not throw — they are
-      // returned inline so handle disposal is still guaranteed.
+        // Phase 4: install input files as __files__ global, then eval.
+        // evalCode() returns result-or-error; errors do not throw — they are
+        // returned inline so handle disposal is still guaranteed.
         this.installFiles(context, state.workspace.toQuickJSGlobals());
 
         const result = context.evalCode(jsCode);

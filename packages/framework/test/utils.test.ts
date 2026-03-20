@@ -137,7 +137,9 @@ describe("safeJsonParse", () => {
   });
 
   test("returns error when validate throws", () => {
-    const result = safeJsonParse('{"a":1}', () => { throw new Error("bad"); });
+    const result = safeJsonParse('{"a":1}', () => {
+      throw new Error("bad");
+    });
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("bad");
   });

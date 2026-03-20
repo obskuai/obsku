@@ -216,7 +216,9 @@ export class ContextWindowManager {
         tokensSaved: originalTokens - compactedTokens,
       };
     } catch (error: unknown) {
-      this.logger?.warn(`[ContextWindow] Compaction failed, using fallback: ${getErrorMessage(error)}`);
+      this.logger?.warn(
+        `[ContextWindow] Compaction failed, using fallback: ${getErrorMessage(error)}`
+      );
       const fallback = [messages[0], ...messages.slice(-DEFAULTS.compaction.recentMessagesBuffer)];
       const fallbackTokens = estimateMessageTokens(fallback);
       return {

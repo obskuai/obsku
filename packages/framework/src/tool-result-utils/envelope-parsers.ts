@@ -1,10 +1,5 @@
 import { safeJsonParse } from "../json-utils";
-import {
-  asRecord,
-  isTerminalFailureStatus,
-  normalizeFailedStatus,
-  toErrorMessage,
-} from "./shared";
+import { asRecord, isTerminalFailureStatus, normalizeFailedStatus, toErrorMessage } from "./shared";
 import type {
   ToolResultEnvelope,
   ToolResultEnvelopeParser,
@@ -54,10 +49,7 @@ function getCanonicalDiscriminators<T>(): Array<CanonicalDiscriminator<T>> {
     {
       key: "success-strict",
       test: (r) =>
-        r.success === true &&
-        r.status === "completed" &&
-        r.error === null &&
-        "data" in r,
+        r.success === true && r.status === "completed" && r.error === null && "data" in r,
       parse: (r) => buildSuccessEnvelope<T>(r.data),
     },
     {
@@ -86,9 +78,7 @@ function getCanonicalDiscriminators<T>(): Array<CanonicalDiscriminator<T>> {
   ];
 }
 
-export function parseCanonicalEnvelope<T>(
-  record: ToolResultObject
-): ToolResultEnvelope<T> | null {
+export function parseCanonicalEnvelope<T>(record: ToolResultObject): ToolResultEnvelope<T> | null {
   for (const discriminator of getCanonicalDiscriminators<T>()) {
     if (discriminator.test(record)) {
       return discriminator.parse(record);
@@ -114,9 +104,7 @@ export function parseFailedEnvelopeLikeEnvelope<T>(
   );
 }
 
-export function getWrappedToolResultCandidate(
-  value: unknown
-): WrappedToolResultCandidate | null {
+export function getWrappedToolResultCandidate(value: unknown): WrappedToolResultCandidate | null {
   const record = asRecord(value);
   if (record == null || typeof record.result !== "string") {
     return null;
@@ -162,9 +150,7 @@ function getObjectEnvelopeStages<T>(): Array<ToolResultEnvelopeParser<T>> {
   ];
 }
 
-export function normalizeObjectToolResultEnvelope<T>(
-  value: unknown
-): ToolResultEnvelope<T> | null {
+export function normalizeObjectToolResultEnvelope<T>(value: unknown): ToolResultEnvelope<T> | null {
   const record = asRecord(value);
   if (record == null) {
     return null;

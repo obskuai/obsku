@@ -7,11 +7,7 @@ import {
   wrapRawValueAsCompletedSuccess,
 } from "./envelope-parsers";
 import { asRecord, isToolOutput, serializeToolResultContent } from "./shared";
-import type {
-  NormalizedToolResultBoundary,
-  ToolResultEnvelope,
-  ToolResultObject,
-} from "./types";
+import type { NormalizedToolResultBoundary, ToolResultEnvelope, ToolResultObject } from "./types";
 
 function isEnvelopeError(envelope: ToolResultEnvelope<unknown>): boolean {
   return envelope.success === false && envelope.status !== "running";

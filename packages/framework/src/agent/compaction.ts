@@ -128,10 +128,14 @@ export class SlidingWindowCompactionStrategy implements CompactionStrategy {
 
     const broken = new Set<string>();
     for (const id of toolUseIds) {
-      if (!toolResultIds.has(id)) {broken.add(id);}
+      if (!toolResultIds.has(id)) {
+        broken.add(id);
+      }
     }
     for (const id of toolResultIds) {
-      if (!toolUseIds.has(id)) {broken.add(id);}
+      if (!toolUseIds.has(id)) {
+        broken.add(id);
+      }
     }
     return broken;
   }

@@ -6,7 +6,6 @@ import type { AgentEvent, Message, PluginDef } from "../types";
 import { z } from "zod";
 import type { HandoffContext, HandoffTarget } from "./types";
 
-
 export type EmitFn = (event: AgentEvent) => Effect.Effect<boolean>;
 
 export interface HandoffResult {
@@ -70,7 +69,9 @@ export async function executeHandoff(
     memory: handoffMemory,
   });
 
-  const result = await targetAgentWithMemory.run(input, ctx.provider, { sessionId: "handoff-session" });
+  const result = await targetAgentWithMemory.run(input, ctx.provider, {
+    sessionId: "handoff-session",
+  });
 
   await Effect.runPromise(
     emit({

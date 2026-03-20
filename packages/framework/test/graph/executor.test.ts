@@ -425,7 +425,12 @@ describe("executeGraph()", () => {
       to: "B",
     };
 
-    const g = graph({ edges: [conditionEdge], entry: "A", nodes, provider: createEchoMockProvider() });
+    const g = graph({
+      edges: [conditionEdge],
+      entry: "A",
+      nodes,
+      provider: createEchoMockProvider(),
+    });
     const result = await executeGraph(g);
 
     expect(result.status).toBe("Complete");
@@ -876,7 +881,12 @@ describe("conditional edge skipping", () => {
       to: "B",
     };
 
-    const g = graph({ edges: [conditionalEdge], entry: "A", nodes, provider: createEchoMockProvider() });
+    const g = graph({
+      edges: [conditionalEdge],
+      entry: "A",
+      nodes,
+      provider: createEchoMockProvider(),
+    });
     const result = await executeGraph(g);
 
     expect(result.status).toBe("Complete");
@@ -904,7 +914,12 @@ describe("conditional edge skipping", () => {
       to: "B",
     };
 
-    const g = graph({ edges: [conditionalEdge], entry: "A", nodes, provider: createEchoMockProvider() });
+    const g = graph({
+      edges: [conditionalEdge],
+      entry: "A",
+      nodes,
+      provider: createEchoMockProvider(),
+    });
     const result = await executeGraph(g);
 
     expect(result.status).toBe("Complete");

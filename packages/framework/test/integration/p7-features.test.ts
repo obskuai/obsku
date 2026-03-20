@@ -123,7 +123,9 @@ describe("P7 Cross-Feature Integration", () => {
       };
 
       const a = agent(def);
-      return expect(a.run("malicious payload", mockProvider, { sessionId: "s2" })).rejects.toThrow("blocked");
+      return expect(a.run("malicious payload", mockProvider, { sessionId: "s2" })).rejects.toThrow(
+        "blocked"
+      );
     });
   });
 

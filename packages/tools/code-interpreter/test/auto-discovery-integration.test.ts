@@ -141,7 +141,6 @@ describe("createCodeInterpreter auto-discovery", () => {
       expect(result.isError).toBeFalsy();
       expect(result.result).toContain("explicit wasm");
     });
-
   });
 
   describe("createCodeInterpreter({ executor: mock }) bypass", () => {

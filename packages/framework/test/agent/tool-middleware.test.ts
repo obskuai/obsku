@@ -188,7 +188,11 @@ describe("tool middleware", () => {
       [
         "echo",
         {
-          middleware: [async () => { throw new Error("middleware exploded"); }],
+          middleware: [
+            async () => {
+              throw new Error("middleware exploded");
+            },
+          ],
           plugin: echo,
         },
       ],

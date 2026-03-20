@@ -8,12 +8,7 @@ import {
 } from "@obsku/framework/checkpoint/backend-shared";
 import type { RedisClientType } from "redis";
 import { getRecord, mGetDeserialize } from "./helpers";
-import {
-  entitiesBySessionKey,
-  entitiesByTypeKey,
-  entitiesByWorkspaceKey,
-  entityKey,
-} from "./keys";
+import { entitiesBySessionKey, entitiesByTypeKey, entitiesByWorkspaceKey, entityKey } from "./keys";
 
 export async function saveEntity(
   client: RedisClientType,

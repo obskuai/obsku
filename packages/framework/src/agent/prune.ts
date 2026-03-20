@@ -147,8 +147,12 @@ export function pruneMessages(messages: Array<Message>, protectedRecentPairs: nu
   const prunableToolResultIds = new Set<string>();
   for (const pair of prunablePairs) {
     // Skip pairs that touch the system prompt (index 0) or last user message.
-    if (pair.toolResultMsgIdx === 0 || pair.toolResultMsgIdx === lastUserIdx) {continue;}
-    if (pair.toolUseMsgIdx === 0 || pair.toolUseMsgIdx === lastUserIdx) {continue;}
+    if (pair.toolResultMsgIdx === 0 || pair.toolResultMsgIdx === lastUserIdx) {
+      continue;
+    }
+    if (pair.toolUseMsgIdx === 0 || pair.toolUseMsgIdx === lastUserIdx) {
+      continue;
+    }
     prunableToolResultIds.add(pair.toolUseId);
   }
 

@@ -1,15 +1,9 @@
 import { Effect } from "effect";
 import type { CheckpointStore } from "../checkpoint/index";
 import type { AgentDef, AgentEvent, LLMProvider, MemoryConfig, Message } from "../types/index";
-import {
-  persistCheckpointMessages,
-  selectCheckpointPersistence,
-} from "./persistence-checkpoint";
+import { persistCheckpointMessages, selectCheckpointPersistence } from "./persistence-checkpoint";
 import { persistLegacyMessages, selectLegacyPersistence } from "./persistence-legacy";
-import {
-  persistMemoryHookResults,
-  selectMemoryHookPersistence,
-} from "./persistence-memory-hooks";
+import { persistMemoryHookResults, selectMemoryHookPersistence } from "./persistence-memory-hooks";
 import { persistSelectedStorage, selectStoragePersistence } from "./persistence-mode-selection";
 
 export function persistToCheckpointStore(

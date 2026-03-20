@@ -29,7 +29,6 @@ const MAX_TRACE_PREVIEW_LENGTH = 200;
 
 // ---------- result.json ----------
 
-
 // ---------- result.json ----------
 
 /**

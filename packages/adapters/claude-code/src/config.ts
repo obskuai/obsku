@@ -44,7 +44,9 @@ function normalizeAllowedTools(extraTools: ReadonlyArray<string> | undefined): A
   const merged = new Set<string>(DEFAULT_ALLOWED_TOOLS);
   for (const tool of extraTools ?? []) {
     const trimmed = tool.trim();
-    if (trimmed.length > 0) {merged.add(trimmed);}
+    if (trimmed.length > 0) {
+      merged.add(trimmed);
+    }
   }
   return Array.from(merged);
 }

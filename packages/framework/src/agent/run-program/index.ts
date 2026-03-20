@@ -86,7 +86,9 @@ function executeAndPersist(
   });
 }
 
-export function createProgram(params: RunProgramParams): Effect.Effect<string, unknown, ConfigService> {
+export function createProgram(
+  params: RunProgramParams
+): Effect.Effect<string, unknown, ConfigService> {
   const { checkpointStore, def, input, provider, sessionId } = params;
   return Effect.gen(function* () {
     const { config, emit } = yield* setupEventBus();

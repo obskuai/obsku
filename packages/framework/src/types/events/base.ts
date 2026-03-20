@@ -24,4 +24,3 @@ export interface AgentUsage {
   totalInputTokens: number;
   totalOutputTokens: number;
 }
-

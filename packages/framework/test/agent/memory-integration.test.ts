@@ -191,7 +191,8 @@ describe("executeMemoryLoad error handling", () => {
 
     expect(result).toBeNull();
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
+    stderrSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 
   it("ignores error and returns null when onHookError is ignore", async () => {
@@ -271,7 +272,8 @@ describe("executeMemoryLoad error handling", () => {
     );
     expect(telemetryCall).toBeDefined();
     expect(String(telemetryCall![0])).toContain("onMemoryLoad");
-    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
+    stderrSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 });
 
@@ -469,7 +471,8 @@ describe("executeEntityExtract error handling", () => {
 
     expect(result).toEqual([]);
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
+    stderrSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 
   it("returns empty array without logging when onHookError is ignore", async () => {
@@ -676,7 +679,8 @@ describe("executeMemorySave error handling", () => {
     await executeMemorySave(config, ctx, provider);
 
     expect(stderrSpy).toHaveBeenCalled();
-    stderrSpy.mockRestore(); delete process.env.OBSKU_DEBUG;
+    stderrSpy.mockRestore();
+    delete process.env.OBSKU_DEBUG;
   });
 
   it("calls custom errorHandler on error", async () => {

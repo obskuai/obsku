@@ -52,7 +52,9 @@ function makeProc(
  */
 function mockSpawn(whichExitCode: number, claudeProc: ReturnType<typeof Bun.spawn>) {
   const spawnFn = mock((cmd: Array<string>) => {
-    if (cmd[0] === "which") {return makeProc("/usr/bin/claude", whichExitCode);}
+    if (cmd[0] === "which") {
+      return makeProc("/usr/bin/claude", whichExitCode);
+    }
     return claudeProc;
   });
   // @ts-expect-error - replacing global for test
@@ -340,7 +342,9 @@ describe("runClaude() — ClaudeCancelledError", () => {
     // which must succeed — preflight runs before the signal check
     // @ts-expect-error - replacing global for test
     Bun.spawn = mock((cmd: Array<string>) => {
-      if (cmd[0] === "which") {return makeProc("/usr/bin/claude", 0);}
+      if (cmd[0] === "which") {
+        return makeProc("/usr/bin/claude", 0);
+      }
       // claude should never be spawned for a pre-aborted signal
       return makeProc(makeEnvelope("hello"), 0);
     });
@@ -348,21 +352,27 @@ describe("runClaude() — ClaudeCancelledError", () => {
     const controller = new AbortController();
     controller.abort();
 
-    const err = await runClaude({ prompt: "hello" }, { signal: controller.signal }).catch((error) => error);
+    const err = await runClaude({ prompt: "hello" }, { signal: controller.signal }).catch(
+      (error) => error
+    );
     expect(err).toBeInstanceOf(ClaudeCancelledError);
   });
 
   test("ClaudeCancelledError has correct _tag and message", async () => {
     // @ts-expect-error - replacing global for test
     Bun.spawn = mock((cmd: Array<string>) => {
-      if (cmd[0] === "which") {return makeProc("/usr/bin/claude", 0);}
+      if (cmd[0] === "which") {
+        return makeProc("/usr/bin/claude", 0);
+      }
       return makeProc(makeEnvelope("hello"), 0);
     });
 
     const controller = new AbortController();
     controller.abort();
 
-    const err = await runClaude({ prompt: "hello" }, { signal: controller.signal }).catch((error) => error);
+    const err = await runClaude({ prompt: "hello" }, { signal: controller.signal }).catch(
+      (error) => error
+    );
     expect(err._tag).toBe("ClaudeCancelledError");
     expect(err.message).toContain("cancelled");
   });

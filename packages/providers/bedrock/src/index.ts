@@ -25,8 +25,6 @@ import { BedrockError, mapAwsError } from "./errors";
 import { chatWithFallback } from "./response-parser";
 import { mapStreamEvent } from "./stream-handler";
 
-
-
 export interface BedrockConfig {
   contextWindowSize?: number;
   maxOutputTokens?: number;
@@ -89,7 +87,7 @@ export async function bedrock(config: BedrockConfig): Promise<LLMProvider> {
           throw new BedrockError("unknown", "No stream in response");
         }
         stream = response.stream as AsyncIterable<ConverseStreamOutput>;
-    } catch (error: unknown) {
+      } catch (error: unknown) {
         if (error instanceof BedrockError) {
           throw error;
         }

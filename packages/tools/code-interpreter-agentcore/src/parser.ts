@@ -88,7 +88,7 @@ export function isEventResult(
 
 export function isDirectResult(
   value: unknown
-): value is { result: { content?: unknown; structuredContent: StructuredContent; } } {
+): value is { result: { content?: unknown; structuredContent: StructuredContent } } {
   return directResultSchema.safeParse(value).success;
 }
 

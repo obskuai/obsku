@@ -71,7 +71,9 @@ export function emitBackgroundStartEvents(
       const parsed = parseJson(result.result);
 
       if (!parsed.ok) {
-        debugLog(`Skipping background start event parse failure for ${toolName} (${toolUseId}): ${parsed.error}; raw=${parsed.raw}`);
+        debugLog(
+          `Skipping background start event parse failure for ${toolName} (${toolUseId}): ${parsed.error}; raw=${parsed.raw}`
+        );
         yield* emit(
           createParseErrorEvent({
             error: parsed.error,
@@ -91,7 +93,9 @@ export function emitBackgroundStartEvents(
       const taskId = extractTaskId(parsed.value);
       if (!taskId) {
         const error = "Expected background start payload with string taskId";
-        debugLog(`Skipping background start event invalid payload for ${toolName} (${toolUseId}): ${error}; raw=${result.result}`);
+        debugLog(
+          `Skipping background start event invalid payload for ${toolName} (${toolUseId}): ${error}; raw=${result.result}`
+        );
         yield* emit(
           createParseErrorEvent({
             error,

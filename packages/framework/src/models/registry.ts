@@ -45,7 +45,9 @@ export class ModelRegistry {
   async resolve(modelId: string): Promise<ModelInfo | undefined> {
     const normalized = normalizeModelId(modelId);
     const cached = this.freshEntry(normalized);
-    if (cached) {return cached;}
+    if (cached) {
+      return cached;
+    }
 
     await this.fetchWithDedup();
 
@@ -84,13 +86,19 @@ export class ModelRegistry {
     );
 
     // Keep stale cache on fetch failure
-    if (!result.ok) {return;}
+    if (!result.ok) {
+      return;
+    }
 
     const models = result.data;
     const fetchedAt = Date.now();
     for (const [id, entry] of Object.entries(models)) {
-      if (entry.mode !== "chat") {continue;}
-      if (!entry.max_input_tokens || !entry.max_output_tokens) {continue;}
+      if (entry.mode !== "chat") {
+        continue;
+      }
+      if (!entry.max_input_tokens || !entry.max_output_tokens) {
+        continue;
+      }
 
       const normalized = normalizeModelId(id);
       const cacheEntry: CacheEntry = {
