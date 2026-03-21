@@ -67,6 +67,14 @@ jobs:
       - name: Verify publish readiness after snapshot versioning
         run: bun run verify:publish
 
+      - name: Configure npm auth
+        run: |
+          cat <<'EOF' > ~/.npmrc
+          //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+          EOF
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish prerelease packages
         run: bunx changeset publish --tag "${{ inputs.tag }}" --no-git-tag
         env:
