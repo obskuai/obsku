@@ -1,3 +1,4 @@
+import type { DefaultPublicPayload } from "../../output-policy";
 import type { AgentEvent, LLMProvider } from "../../types";
 import { GraphNestingError } from "../errors";
 import { executeGraph } from "../executor";
@@ -21,9 +22,15 @@ export async function executeSubgraphNode(
     throw new GraphNestingError(MAX_GRAPH_DEPTH);
   }
 
-  const eventHandler = (event: AgentEvent) => {
+  const eventHandler = (event: DefaultPublicPayload<AgentEvent>) => {
+    const canonicalEvent = {
+      ...event.data,
+      timestamp: event.timestamp,
+      type: event.type,
+    } as AgentEvent;
+
     executor.onEvent?.(event);
-    onEvent?.(event);
+    onEvent?.(canonicalEvent);
   };
 
   const subgraphOptions: ExecuteGraphOptions | undefined =
@@ -32,6 +39,7 @@ export async function executeSubgraphNode(
           checkpointStore: options.checkpointStore,
           namespace: nodeId,
           onCheckpoint: options.onCheckpoint,
+          outputPolicy: options.outputPolicy,
           sessionId: options.sessionId,
         }
       : undefined;

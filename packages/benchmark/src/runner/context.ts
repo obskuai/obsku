@@ -86,6 +86,20 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function normalizeToCanonicalEvent(event: unknown): CanonicalAgentEvent {
+  if (typeof event !== "object" || event === null) {
+    throw new Error("Invalid event");
+  }
+  const e = event as Record<string, unknown>;
+
+  if ("data" in e && typeof e.data === "object" && e.data !== null) {
+    const { data, ...rest } = e;
+    return { ...rest, ...data } as unknown as CanonicalAgentEvent;
+  }
+
+  return e as unknown as CanonicalAgentEvent;
+}
+
 async function waitForEventDrain(getCount: () => number): Promise<void> {
   let stableReads = 0;
 
@@ -179,7 +193,7 @@ export async function createBenchmarkContext(
         while (true) {
           const next = await iterator.next();
           if (next.done) return;
-          const event = next.value as CanonicalAgentEvent;
+          const event = normalizeToCanonicalEvent(next.value);
           collected.push(event);
           await recordEvent(event);
         }

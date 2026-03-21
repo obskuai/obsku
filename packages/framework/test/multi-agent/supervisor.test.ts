@@ -185,19 +185,21 @@ describe("supervisor()", () => {
     expect(result).toEqual({ finalContext: [], results: {} });
     expect(events).toContainEqual(
       expect.objectContaining({
-        error: "Supervisor routing parse-failed; defaulting to FINISH",
-        rawInput: "not json",
+        data: {
+          error: "Supervisor routing parse-failed; defaulting to FINISH",
+          rawInput: "not json",
+        },
         type: "parse.error",
       })
     );
     expect(events).toContainEqual(
       expect.objectContaining({
-        next: "FINISH",
+        data: { next: "FINISH", round: 0 },
         type: "supervisor.routing",
       })
     );
     expect(events).toContainEqual(
-      expect.objectContaining({ rounds: 0, type: "supervisor.finish" })
+      expect.objectContaining({ data: { rounds: 0 }, type: "supervisor.finish" })
     );
   });
 

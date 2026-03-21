@@ -5,6 +5,8 @@ import { DEFAULT_PORT } from "./constants";
 import { type AgentLike, type ServeOptions } from "./shared";
 
 export type { AgentCard, A2ARequest, A2AResponse, AgentCoreRequest, AgentLike, ServeOptions };
+export type { StrandsPublicPayload } from "./strands-policy";
+export { createStrandsPolicy, strandsPolicy } from "./strands-policy";
 
 export function serve(
   a: AgentLike,

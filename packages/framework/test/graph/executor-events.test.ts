@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { graph } from "../../src/graph/builder";
 import { executeGraph } from "../../src/graph/executor";
 import type { GraphNode } from "../../src/graph/types";
+import type { DefaultPublicPayload } from "../../src/output-policy";
 import type { AgentEvent } from "../../src/types";
 import { agentNode, edge, fnNode, minimalMockProvider } from "../utils/helpers";
 
@@ -11,41 +12,46 @@ import { agentNode, edge, fnNode, minimalMockProvider } from "../utils/helpers";
 
 describe("graph.node.* events", () => {
   test("emits graph.node.start before each node execution", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [agentNode("A"), agentNode("B")];
     const edges = [edge("A", "B")];
 
     const g = graph({ edges, entry: "A", nodes, provider: minimalMockProvider });
     await executeGraph(g, (event) => events.push(event));
 
-    const startEvents = events.filter((e) => e.type === "graph.node.start");
+    const startEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.node.start" }>> =>
+        e.type === "graph.node.start"
+    );
     expect(startEvents).toHaveLength(2);
-    expect(startEvents[0]).toMatchObject({ nodeId: "A", type: "graph.node.start" });
-    expect(startEvents[1]).toMatchObject({ nodeId: "B", type: "graph.node.start" });
+    expect(startEvents[0]).toMatchObject({ data: { nodeId: "A" }, type: "graph.node.start" });
+    expect(startEvents[1]).toMatchObject({ data: { nodeId: "B" }, type: "graph.node.start" });
     expect(startEvents[0].timestamp).toBeGreaterThan(0);
     expect(startEvents[1].timestamp).toBeGreaterThan(0);
   });
 
   test("emits graph.node.complete with result and duration on success", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [fnNode("A", async () => "success-output")];
 
     const g = graph({ edges: [], entry: "A", nodes, provider: minimalMockProvider });
     await executeGraph(g, (event) => events.push(event));
 
-    const completeEvents = events.filter((e) => e.type === "graph.node.complete");
+    const completeEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.node.complete" }>> =>
+        e.type === "graph.node.complete"
+    );
     expect(completeEvents).toHaveLength(1);
     expect(completeEvents[0]).toMatchObject({
-      nodeId: "A",
-      result: "success-output",
+      data: { nodeId: "A", result: "success-output" },
       type: "graph.node.complete",
     });
-    expect(completeEvents[0].duration).toBeGreaterThanOrEqual(0);
+    expect(completeEvents[0].data.duration).toBeGreaterThanOrEqual(0);
     expect(completeEvents[0].timestamp).toBeGreaterThan(0);
   });
 
   test("emits graph.node.failed with error message on failure", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [
       fnNode("A", async () => {
         throw new Error("node-failed-error");
@@ -55,18 +61,20 @@ describe("graph.node.* events", () => {
     const g = graph({ edges: [], entry: "A", nodes, provider: minimalMockProvider });
     await executeGraph(g, (event) => events.push(event));
 
-    const failedEvents = events.filter((e) => e.type === "graph.node.failed");
+    const failedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.node.failed" }>> =>
+        e.type === "graph.node.failed"
+    );
     expect(failedEvents).toHaveLength(1);
     expect(failedEvents[0]).toMatchObject({
-      error: "node-failed-error",
-      nodeId: "A",
+      data: { error: "node-failed-error", nodeId: "A" },
       type: "graph.node.failed",
     });
     expect(failedEvents[0].timestamp).toBeGreaterThan(0);
   });
 
   test("emits correct event sequence for successful node", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [fnNode("A", async () => "result")];
 
     const g = graph({ edges: [], entry: "A", nodes, provider: minimalMockProvider });
@@ -79,7 +87,7 @@ describe("graph.node.* events", () => {
   });
 
   test("emits correct event sequence for failed node", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [
       fnNode("A", async () => {
         throw new Error("fail");
@@ -96,7 +104,7 @@ describe("graph.node.* events", () => {
   });
 
   test("emits events for all nodes in parallel wave", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes: Array<GraphNode> = [
       fnNode("A", async () => "A-out"),
       fnNode("B", async () => "B-out"),
@@ -110,18 +118,16 @@ describe("graph.node.* events", () => {
     // Should have: A start, A complete, B start, B complete, C start, C complete
     expect(events).toHaveLength(6);
 
-    const startEvents = events.filter((e) => e.type === "graph.node.start");
-    const completeEvents = events.filter((e) => e.type === "graph.node.complete");
+    const startEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.node.start" }>> =>
+        e.type === "graph.node.start"
+    );
+    const completeEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.node.complete" }>> =>
+        e.type === "graph.node.complete"
+    );
 
-    expect(startEvents.map((e) => (e as { nodeId: string }).nodeId).sort()).toEqual([
-      "A",
-      "B",
-      "C",
-    ]);
-    expect(completeEvents.map((e) => (e as { nodeId: string }).nodeId).sort()).toEqual([
-      "A",
-      "B",
-      "C",
-    ]);
+    expect(startEvents.map((e) => e.data.nodeId as string).sort()).toEqual(["A", "B", "C"]);
+    expect(completeEvents.map((e) => e.data.nodeId as string).sort()).toEqual(["A", "B", "C"]);
   });
 });

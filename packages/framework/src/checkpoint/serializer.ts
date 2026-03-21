@@ -2,6 +2,14 @@ import { isRecord } from "../utils/type-guards";
 import { CheckpointCorruptionError } from "./errors";
 import type { Serializer } from "./types";
 
+/**
+ * Checkpoint Serializer - Handles serialization of checkpoint state.
+ *
+ * IMPORTANT: Internal framework paths must use canonical types only.
+ * Checkpoint serialization stores/transmits canonical events and messages.
+ * Do not add transport-specific transformations here.
+ */
+
 const SERIALIZER_TYPE = { BUFFER: "Buffer", DATE: "Date", MAP: "Map", SET: "Set" } as const;
 type SerializerType = (typeof SERIALIZER_TYPE)[keyof typeof SERIALIZER_TYPE];
 

@@ -5,6 +5,7 @@
 
 import type { CheckpointBackend } from "../checkpoint/index";
 import type { MemoryProvider } from "../memory/types";
+import type { DefaultPublicPayload } from "../output-policy/types";
 import type { AgentEvent } from "./events";
 import type { LLMResponse, Message, ResponseFormat, ToolDef } from "./llm";
 import type {
@@ -133,7 +134,7 @@ export interface AgentRunOptions {
   checkpointStore?: CheckpointBackend;
   eventBusCapacity?: number;
   messages?: Array<ConversationMessage>;
-  onEvent?: (event: AgentEvent) => void;
+  onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   responseFormat?: ResponseFormat;
   sessionId?: string;
 }

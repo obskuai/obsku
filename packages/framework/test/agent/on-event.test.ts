@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import { agent } from "../../src/agent";
+import type { DefaultPublicPayload } from "../../src/output-policy";
 import { plugin } from "../../src/plugin";
 import type { AgentEvent, LLMProvider, PluginDef } from "../../src/types";
 
 async function nextMatching(
-  iterator: AsyncIterator<AgentEvent>,
-  predicate: (event: AgentEvent) => boolean
-): Promise<AgentEvent> {
+  iterator: AsyncIterator<DefaultPublicPayload<AgentEvent>>,
+  predicate: (event: DefaultPublicPayload<AgentEvent>) => boolean
+): Promise<DefaultPublicPayload<AgentEvent>> {
   while (true) {
     const next = await iterator.next();
     if (next.done) {
@@ -21,7 +22,7 @@ async function nextMatching(
 
 describe("agent.run onEvent", () => {
   test("forwards StreamChunk, ToolCalling, ToolResult", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
 
     const echo: PluginDef<z.ZodObject<{ text: z.ZodString }>> = {
       description: "Echo",
@@ -67,7 +68,9 @@ describe("agent.run onEvent", () => {
       streaming: true,
       tools: [plugin(echo)],
     });
-    const result = await a.run("hi", provider, { onEvent: (event) => events.push(event) });
+    const result = await a.run("hi", provider, {
+      onEvent: (event) => events.push(event as unknown as DefaultPublicPayload<AgentEvent>),
+    });
 
     expect(result).toBe("hello world");
     expect(events.some((event) => event.type === "stream.chunk")).toBe(true);
@@ -98,17 +101,25 @@ describe("agent.run onEvent", () => {
     const a = agent({ name: "session-agent", prompt: "Reply", streaming: true });
     const sessionId = "session-subscribe-test";
     const subscription = await a.subscribe({ sessionId });
-    const iterator = subscription[Symbol.asyncIterator]();
+    const iterator = subscription[Symbol.asyncIterator]() as AsyncIterator<
+      DefaultPublicPayload<AgentEvent>
+    >;
 
     const firstRun = a.run("one", provider, { sessionId });
     const firstChunk = await nextMatching(
       iterator,
-      (event) => event.type === "stream.chunk" && event.content === "first"
+      (event) =>
+        event.type === "stream.chunk" &&
+        (event as DefaultPublicPayload<Extract<AgentEvent, { type: "stream.chunk" }>>).data
+          .content === "first"
     );
     const secondRun = a.run("two", provider, { sessionId });
     const secondChunk = await nextMatching(
       iterator,
-      (event) => event.type === "stream.chunk" && event.content === "second"
+      (event) =>
+        event.type === "stream.chunk" &&
+        (event as DefaultPublicPayload<Extract<AgentEvent, { type: "stream.chunk" }>>).data
+          .content === "second"
     );
 
     expect((await firstRun).trim()).toBe("first");

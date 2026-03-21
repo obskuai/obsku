@@ -1,4 +1,5 @@
-import type { LLMProvider } from "@obsku/framework";
+import type { AgentEvent, DefaultPublicPayload, LLMProvider, OutputPolicy } from "@obsku/framework";
+import { getOutputPolicy } from "@obsku/framework";
 
 import { HTTP_STATUS, JSONRPC_VERSION } from "./constants";
 import {
@@ -11,6 +12,13 @@ import {
   runAgentStream,
 } from "./handler-utils";
 import { type AgentLike, createWriteErr, formatSSEMessage, type ServeOptions } from "./shared";
+
+type StreamChunkData = Omit<Extract<AgentEvent, { type: "stream.chunk" }>, "timestamp" | "type">;
+type A2ATransportEvent = DefaultPublicPayload<AgentEvent>;
+const a2aTransportPolicy = getOutputPolicy("default") as OutputPolicy<
+  AgentEvent,
+  A2ATransportEvent
+>;
 
 export interface AgentCard {
   capabilities: { streaming: boolean };
@@ -70,7 +78,7 @@ export function handleA2AStream(
   const taskId = crypto.randomUUID();
   const reqId = body.id;
 
-  return runAgentStream({
+  return runAgentStream<A2ATransportEvent>({
     agent: a,
     buildCallbacks: ({ isAborted, send }) => {
       const sendJson = (data: unknown) => send(formatSSEMessage({ data }));
@@ -100,12 +108,13 @@ export function handleA2AStream(
         onEvent: (event) => {
           if (isAborted()) return;
           if (event.type !== "stream.chunk") return;
+          const chunk = event.data as StreamChunkData;
           sendJson({
             id: reqId,
             jsonrpc: JSONRPC_VERSION,
             result: {
               artifactUpdate: {
-                artifact: { parts: [{ kind: "text", text: event.content }] },
+                artifact: { parts: [{ kind: "text", text: chunk.content }] },
                 taskId,
               },
             },
@@ -121,6 +130,7 @@ export function handleA2AStream(
       };
     },
     input: prompt,
+    policy: a2aTransportPolicy,
     provider,
     signal,
     writeErr: createWriteErr(logger),

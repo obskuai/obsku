@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { TaskManager } from "../../src/background";
+import type { DefaultPublicPayload } from "../../src/output-policy";
 import type { AgentEvent } from "../../src/types";
 
 function delay(ms: number): Promise<void> {
@@ -7,7 +8,7 @@ function delay(ms: number): Promise<void> {
 }
 
 describe("bg.task.* events", () => {
-  let events: Array<AgentEvent> = [];
+  let events: Array<DefaultPublicPayload<AgentEvent>> = [];
 
   beforeEach(() => {
     events = [];
@@ -26,14 +27,17 @@ describe("bg.task.* events", () => {
 
     await delay(20);
 
-    const completedEvents = events.filter((e) => e.type === "bg.task.completed");
+    const completedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
+        e.type === "bg.task.completed"
+    );
     expect(completedEvents).toHaveLength(1);
     expect(completedEvents[0]).toMatchObject({
-      toolName: "test-plugin",
+      data: { toolName: "test-plugin" },
       type: "bg.task.completed",
     });
-    expect(completedEvents[0].taskId).toMatch(/^task-[a-f0-9]{8}$/);
-    expect(completedEvents[0].duration).toBeGreaterThanOrEqual(0);
+    expect(completedEvents[0].data.taskId).toMatch(/^task-[a-f0-9]{8}$/);
+    expect(completedEvents[0].data.duration).toBeGreaterThanOrEqual(0);
     expect(completedEvents[0].timestamp).toBeGreaterThan(0);
   });
 
@@ -45,14 +49,16 @@ describe("bg.task.* events", () => {
 
     await delay(20);
 
-    const failedEvents = events.filter((e) => e.type === "bg.task.failed");
+    const failedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.failed" }>> =>
+        e.type === "bg.task.failed"
+    );
     expect(failedEvents).toHaveLength(1);
     expect(failedEvents[0]).toMatchObject({
-      error: "task-failed-error",
-      toolName: "failing-plugin",
+      data: { error: "task-failed-error", toolName: "failing-plugin" },
       type: "bg.task.failed",
     });
-    expect(failedEvents[0].taskId).toMatch(/^task-[a-f0-9]{8}$/);
+    expect(failedEvents[0].data.taskId).toMatch(/^task-[a-f0-9]{8}$/);
     expect(failedEvents[0].timestamp).toBeGreaterThan(0);
   });
 
@@ -62,13 +68,16 @@ describe("bg.task.* events", () => {
 
     await delay(100);
 
-    const timeoutEvents = events.filter((e) => e.type === "bg.task.timeout");
+    const timeoutEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.timeout" }>> =>
+        e.type === "bg.task.timeout"
+    );
     expect(timeoutEvents).toHaveLength(1);
     expect(timeoutEvents[0]).toMatchObject({
-      toolName: "slow-plugin",
+      data: { toolName: "slow-plugin" },
       type: "bg.task.timeout",
     });
-    expect(timeoutEvents[0].taskId).toMatch(/^task-[a-f0-9]{8}$/);
+    expect(timeoutEvents[0].data.taskId).toMatch(/^task-[a-f0-9]{8}$/);
     expect(timeoutEvents[0].timestamp).toBeGreaterThan(0);
   });
 
@@ -78,7 +87,10 @@ describe("bg.task.* events", () => {
 
     await delay(100);
 
-    const completedEvents = events.filter((e) => e.type === "bg.task.completed");
+    const completedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
+        e.type === "bg.task.completed"
+    );
     expect(completedEvents).toHaveLength(0);
   });
 
@@ -94,13 +106,19 @@ describe("bg.task.* events", () => {
 
     expect(events).toHaveLength(2);
 
-    const completedEvents = events.filter((e) => e.type === "bg.task.completed");
-    const failedEvents = events.filter((e) => e.type === "bg.task.failed");
+    const completedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
+        e.type === "bg.task.completed"
+    );
+    const failedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.failed" }>> =>
+        e.type === "bg.task.failed"
+    );
 
     expect(completedEvents).toHaveLength(1);
     expect(failedEvents).toHaveLength(1);
-    expect(completedEvents[0].toolName).toBe("success-plugin");
-    expect(failedEvents[0].toolName).toBe("fail-plugin");
+    expect(completedEvents[0].data.toolName).toBe("success-plugin");
+    expect(failedEvents[0].data.toolName).toBe("fail-plugin");
   });
 
   test("completed event includes correct duration", async () => {
@@ -112,8 +130,11 @@ describe("bg.task.* events", () => {
 
     await delay(80);
 
-    const completedEvents = events.filter((e) => e.type === "bg.task.completed");
-    expect(completedEvents[0].duration).toBeGreaterThanOrEqual(50);
+    const completedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
+        e.type === "bg.task.completed"
+    );
+    expect(completedEvents[0].data.duration).toBeGreaterThanOrEqual(50);
   });
 
   test("failed event includes error message for non-Error throws", async () => {
@@ -124,7 +145,10 @@ describe("bg.task.* events", () => {
 
     await delay(20);
 
-    const failedEvents = events.filter((e) => e.type === "bg.task.failed");
-    expect(failedEvents[0].error).toBe("string-error");
+    const failedEvents = events.filter(
+      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.failed" }>> =>
+        e.type === "bg.task.failed"
+    );
+    expect(failedEvents[0].data.error).toBe("string-error");
   });
 });

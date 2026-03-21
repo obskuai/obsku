@@ -4,6 +4,8 @@
 
 import type { Checkpoint, CheckpointBackend } from "../checkpoint/index";
 import { DEFAULTS } from "../defaults";
+import type { DefaultPublicPayload } from "../output-policy";
+import type { LoadedPolicy } from "../output-policy/loader";
 import type { AgentDef, AgentEvent, LLMProvider } from "../types";
 
 // --- Node Status ---
@@ -109,7 +111,7 @@ export interface GraphInput {
   readonly edges: ReadonlyArray<GraphEdge>;
   readonly entry: string;
   readonly nodes: ReadonlyArray<GraphNode>;
-  readonly onEvent?: (event: AgentEvent) => void;
+  readonly onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   readonly provider: LLMProvider;
 }
 
@@ -123,7 +125,7 @@ export interface Graph {
   /** Topologically sorted execution order */
   readonly executionOrder: ReadonlyArray<string>;
   readonly nodes: ReadonlyMap<string, GraphNode>;
-  readonly onEvent?: (event: AgentEvent) => void;
+  readonly onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   readonly provider: LLMProvider;
 }
 
@@ -162,6 +164,7 @@ export interface ExecuteGraphOptions {
   interruptInput?: unknown;
   namespace?: string;
   onCheckpoint?: (checkpoint: Checkpoint) => void;
+  outputPolicy?: LoadedPolicy;
   resumeFrom?: Checkpoint;
   sessionId?: string;
 }

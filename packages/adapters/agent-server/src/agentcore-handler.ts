@@ -1,5 +1,5 @@
-import type { AgentEvent, LLMProvider } from "@obsku/framework";
-import { getErrorMessage } from "@obsku/framework";
+import type { AgentEvent, DefaultPublicPayload, LLMProvider, OutputPolicy } from "@obsku/framework";
+import { getErrorMessage, getOutputPolicy } from "@obsku/framework";
 
 import { HTTP_STATUS } from "./constants";
 import {
@@ -7,6 +7,8 @@ import {
   createServerConfig,
   parseJsonRequest,
   resolveRequestProvider,
+  type TransportEventPayload,
+  wrapTransportEventCallback,
 } from "./handler-utils";
 import { parseAgentCoreRequest } from "./parse-request";
 import { type AgentLike, createSSEStream, createWriteErr, type ServeOptions } from "./shared";
@@ -29,6 +31,18 @@ export interface AgentCoreRequest {
   session_id?: string;
   system_prompt?: string;
 }
+
+type StreamChunkData = Omit<Extract<AgentEvent, { type: "stream.chunk" }>, "timestamp" | "type">;
+type ToolCallData = Omit<Extract<AgentEvent, { type: "tool.call" }>, "timestamp" | "type">;
+type AgentCompleteData = Omit<
+  Extract<AgentEvent, { type: "agent.complete" }>,
+  "timestamp" | "type"
+>;
+type AgentCoreTransportEvent = TransportEventPayload<DefaultPublicPayload<AgentEvent>>;
+const agentCoreTransportPolicy = getOutputPolicy("default") as OutputPolicy<
+  AgentEvent,
+  AgentCoreTransportEvent
+>;
 
 export function serveAgentCore(
   a: AgentLike,
@@ -98,32 +112,37 @@ export function serveAgentCore(
           }
         };
 
-        const onEvent = (event: AgentEvent) => {
+        const onEvent = (event: AgentCoreTransportEvent) => {
           if (isAborted()) return;
 
           if (event.type === "stream.chunk") {
+            const chunk = event.data as StreamChunkData;
             ensureTextBlock();
-            send(contentBlockDelta(blockIndex, event.content));
+            send(contentBlockDelta(blockIndex, chunk.content));
           }
 
           if (event.type === "tool.call") {
+            const toolCall = event.data as ToolCallData;
             closeTextBlock();
-            send(toolUseContentBlockStart(blockIndex, event.toolUseId, event.toolName));
+            send(toolUseContentBlockStart(blockIndex, toolCall.toolUseId, toolCall.toolName));
             send(
               toolUseContentBlockDelta(
                 blockIndex,
-                typeof event.args === "string" ? event.args : JSON.stringify(event.args)
+                typeof toolCall.args === "string" ? toolCall.args : JSON.stringify(toolCall.args)
               )
             );
             send(contentBlockStop(blockIndex));
             blockIndex++;
           }
 
-          if (event.type === "agent.complete" && event.usage) {
+          if (event.type === "agent.complete") {
+            const completed = event.data as AgentCompleteData;
+            if (!completed.usage) return;
+
             usage = {
-              inputTokens: event.usage.totalInputTokens,
-              outputTokens: event.usage.totalOutputTokens,
-              totalTokens: event.usage.totalInputTokens + event.usage.totalOutputTokens,
+              inputTokens: completed.usage.totalInputTokens,
+              outputTokens: completed.usage.totalOutputTokens,
+              totalTokens: completed.usage.totalInputTokens + completed.usage.totalOutputTokens,
             };
           }
         };
@@ -133,7 +152,11 @@ export function serveAgentCore(
 
           await a.run(parsed.input, provider, {
             messages: parsed.messages,
-            onEvent,
+            onEvent: wrapTransportEventCallback<AgentCoreTransportEvent>(
+              onEvent,
+              agentCoreTransportPolicy
+            ),
+            sessionId: parsed.sessionId,
           });
 
           closeTextBlock();

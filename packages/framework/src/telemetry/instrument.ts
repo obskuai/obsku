@@ -1,6 +1,14 @@
 import { withSpan } from "./tracer";
 import type { TelemetryConfig } from "./types";
 
+/**
+ * Telemetry Instrumentation - OpenTelemetry integration for framework operations.
+ *
+ * IMPORTANT: Telemetry operates on canonical events and types only.
+ * No transport-specific transformations should occur here.
+ * Adapter-specific telemetry belongs in the adapter layer.
+ */
+
 export async function instrumentLLMCall<T>(
   config: TelemetryConfig | undefined,
   provider: string,

@@ -1,3 +1,6 @@
+import type { DefaultPublicPayload } from "../output-policy";
+import { loadOutputPolicy, wrapCallback } from "../output-policy";
+import type { LoadedPolicy } from "../output-policy/loader";
 import type { AgentEvent } from "../types";
 import { getErrorMessage } from "../utils";
 import {
@@ -52,10 +55,14 @@ async function executeGraphPhases(
 
 export async function executeGraph(
   graph: Graph,
-  onEvent?: (event: AgentEvent) => void,
+  onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void,
   depth = 1,
   options?: ExecuteGraphOptions
 ): Promise<GraphResult> {
+  const loadedPolicy: LoadedPolicy = options?.outputPolicy ?? loadOutputPolicy();
+  const wrappedOnEvent = onEvent
+    ? wrapCallback(onEvent, loadedPolicy.createPolicy(), "callback")
+    : undefined;
   const waves = toposort(graph);
   const results = new Map<string, NodeResult>();
   const reverseAdjacency = new Map<string, Set<string>>();
@@ -73,8 +80,7 @@ export async function executeGraph(
     const ctx: ExecutionContext = {
       depth,
       graph,
-
-      onEvent,
+      onEvent: wrappedOnEvent,
       options,
       results,
     };

@@ -5,6 +5,7 @@ import { executeGraph } from "../../src/graph/executor";
 import { resumeGraph } from "../../src/graph/resume";
 import type { ExecuteGraphOptions, Graph, GraphEdge, GraphNode } from "../../src/graph/types";
 import { interrupt } from "../../src/interrupt/types";
+import type { DefaultPublicPayload } from "../../src/output-policy";
 import type { AgentEvent, LLMProvider, LLMResponse } from "../../src/types";
 
 function mockProvider(): LLMProvider {
@@ -86,7 +87,7 @@ describe("Graph Interrupt Handling", () => {
   test("graph.interrupt event emitted with checkpointId", async () => {
     const store = new InMemoryCheckpointStore();
     const session = await store.createSession("/test");
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
 
     const nodes = [
       fnNode("A", async () => {
@@ -102,18 +103,20 @@ describe("Graph Interrupt Handling", () => {
 
     await executeGraph(g, (e) => events.push(e), 1, options);
 
-    const interruptEvent = events.find((e) => e.type === "graph.interrupt") as {
-      checkpointId: string;
-      nodeId: string;
-      reason: string;
-      requiresInput: boolean;
+    const interruptEvent = events.find((e) => e.type === "graph.interrupt") as unknown as {
+      data: {
+        checkpointId: string;
+        nodeId: string;
+        reason: string;
+        requiresInput: boolean;
+      };
       type: "graph.interrupt";
     };
     expect(interruptEvent).toBeDefined();
-    expect(interruptEvent.nodeId).toBe("A");
-    expect(interruptEvent.reason).toBe("need input");
-    expect(interruptEvent.requiresInput).toBe(true);
-    expect(interruptEvent.checkpointId).toBeDefined();
+    expect(interruptEvent.data.nodeId).toBe("A");
+    expect(interruptEvent.data.reason).toBe("need input");
+    expect(interruptEvent.data.requiresInput).toBe(true);
+    expect(interruptEvent.data.checkpointId).toBeDefined();
   });
 
   test("resumeGraph() loads and continues from checkpoint", async () => {
@@ -633,7 +636,7 @@ describe("Graph Interrupt Handling", () => {
   });
 
   test("cycle execution honors maxIterations and emits paired events", async () => {
-    const events: Array<AgentEvent> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     let aCalls = 0;
     let bCalls = 0;
 
@@ -667,24 +670,28 @@ describe("Graph Interrupt Handling", () => {
     expect(result.results.B.output).toBe("b-4");
 
     const cycleStarts = events.filter(
-      (event): event is Extract<AgentEvent, { type: "graph.cycle.start" }> =>
+      (event): event is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.cycle.start" }>> =>
         event.type === "graph.cycle.start"
     );
     const cycleCompletes = events.filter(
-      (event): event is Extract<AgentEvent, { type: "graph.cycle.complete" }> =>
+      (
+        event
+      ): event is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.cycle.complete" }>> =>
         event.type === "graph.cycle.complete"
     );
 
-    expect(cycleStarts.map((event) => event.iteration)).toEqual([1, 2, 3]);
-    expect(cycleCompletes.map((event) => event.iteration)).toEqual([1, 2, 3]);
+    expect(cycleStarts.map((event) => event.data.iteration)).toEqual([1, 2, 3]);
+    expect(cycleCompletes.map((event) => event.data.iteration)).toEqual([1, 2, 3]);
     expect(
       cycleStarts.every(
-        (event) => event.from === "B" && event.maxIterations === 3 && event.to === "A"
+        (event) =>
+          event.data.from === "B" && event.data.maxIterations === 3 && event.data.to === "A"
       )
     ).toBe(true);
     expect(
       cycleCompletes.every(
-        (event) => event.from === "B" && event.maxIterations === 3 && event.to === "A"
+        (event) =>
+          event.data.from === "B" && event.data.maxIterations === 3 && event.data.to === "A"
       )
     ).toBe(true);
   });

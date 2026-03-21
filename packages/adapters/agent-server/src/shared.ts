@@ -20,6 +20,7 @@ export interface AgentLike {
     options?: {
       messages?: Array<ConversationMessage>;
       onEvent?: (event: AgentEvent) => void;
+      sessionId?: string;
     }
   ) => Promise<string>;
 }

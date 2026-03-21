@@ -1,4 +1,5 @@
 import { agent } from "../../agent/index";
+import type { DefaultPublicPayload } from "../../output-policy/types";
 import type { AgentDef, AgentEvent, LLMProvider, Message } from "../../types";
 import type { ExecuteGraphOptions } from "../types";
 import { extractText } from "./text";
@@ -16,12 +17,21 @@ export async function executeAgentNode(
   { input, onEvent, options, provider }: ExecuteAgentNodeOptions
 ): Promise<NodeExecutionOutcome> {
   const hasTools = executor.tools && executor.tools.length > 0;
+  const publicOnEvent = onEvent
+    ? (event: DefaultPublicPayload<AgentEvent>) => {
+        onEvent({
+          ...event.data,
+          timestamp: event.timestamp,
+          type: event.type,
+        } as AgentEvent);
+      }
+    : undefined;
 
   if (hasTools) {
     return completeNodeExecution(
       await agent(executor).run(input, provider, {
         checkpointStore: options?.checkpointStore,
-        onEvent,
+        onEvent: publicOnEvent,
         sessionId: options?.sessionId,
       })
     );

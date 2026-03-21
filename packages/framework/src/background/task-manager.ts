@@ -1,5 +1,8 @@
 import crypto from "node:crypto";
 import { DEFAULTS } from "../defaults";
+import type { DefaultPublicPayload } from "../output-policy";
+import { loadOutputPolicy, wrapCallback } from "../output-policy";
+import type { LoadedPolicy } from "../output-policy/loader";
 import type { AgentEvent } from "../types";
 import { getErrorMessage } from "../utils";
 import { TaskConcurrencyError } from "./errors";
@@ -19,7 +22,7 @@ export interface TaskEntry {
 export interface TaskManagerConfig {
   maxConcurrent: number;
   maxLifetimeMs: number;
-  onEvent?: (event: AgentEvent) => void;
+  onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   retentionMs: number;
 }
 
@@ -31,10 +34,20 @@ const DEFAULT_CONFIG: TaskManagerConfig = {
 
 export class TaskManager {
   readonly config: TaskManagerConfig;
+  private readonly loadedPolicy: LoadedPolicy;
+  private readonly onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   private tasks = new Map<string, TaskEntry>();
 
   constructor(config: Partial<TaskManagerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.loadedPolicy = loadOutputPolicy();
+    this.onEvent = config.onEvent;
+  }
+
+  private createSessionEmitter(): ((event: AgentEvent) => void) | undefined {
+    return this.onEvent
+      ? wrapCallback(this.onEvent, this.loadedPolicy.createPolicy(), "callback")
+      : undefined;
   }
 
   private get runningCount(): number {
@@ -61,6 +74,7 @@ export class TaskManager {
       state: "running",
     };
     this.tasks.set(id, entry);
+    const onEvent = this.createSessionEmitter();
 
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Task timeout")), this.config.maxLifetimeMs)
@@ -72,7 +86,7 @@ export class TaskManager {
         entry.state = "completed";
         entry.result = result;
         entry.completedAt = completedAt;
-        this.config.onEvent?.({
+        onEvent?.({
           duration: completedAt - entry.startedAt,
           taskId: id,
           timestamp: completedAt,
@@ -87,14 +101,14 @@ export class TaskManager {
         entry.error = getErrorMessage(error);
         entry.completedAt = completedAt;
         if (isTimeout) {
-          this.config.onEvent?.({
+          onEvent?.({
             taskId: id,
             timestamp: completedAt,
             toolName: pluginName,
             type: "bg.task.timeout",
           });
         } else {
-          this.config.onEvent?.({
+          onEvent?.({
             error: getErrorMessage(error),
             taskId: id,
             timestamp: completedAt,

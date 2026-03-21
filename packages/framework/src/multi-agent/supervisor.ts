@@ -5,6 +5,8 @@
 import { graph } from "../graph/builder";
 import { extractText } from "../graph/node-executor";
 import type { Graph, GraphNode } from "../graph/types";
+import type { DefaultPublicPayload } from "../output-policy";
+import { loadOutputPolicy, wrapCallback } from "../output-policy";
 import type { AgentDef, AgentEvent, LLMProvider, Message } from "../types";
 import { MultiAgentConfigError } from "./errors";
 import { dispatchToWorker } from "./supervisor-dispatch";
@@ -19,7 +21,7 @@ import {
 export interface SupervisorConfig {
   maxRounds?: number;
   name: string;
-  onEvent?: (event: AgentEvent) => void;
+  onEvent?: (event: DefaultPublicPayload<AgentEvent>) => void;
   prompt?: string;
   provider: LLMProvider;
   workers: Array<AgentDef>;
@@ -29,6 +31,8 @@ export { buildSupervisorPrompt, parseSupervisorOutput };
 
 export function supervisor(config: SupervisorConfig): Graph {
   const { maxRounds = 5, name, provider, workers } = config;
+  const onEvent = config.onEvent;
+  const loadedPolicy = loadOutputPolicy();
 
   if (workers.length === 0) {
     throw new MultiAgentConfigError("Supervisor requires at least one worker");
@@ -45,6 +49,9 @@ export function supervisor(config: SupervisorConfig): Graph {
     const context = typeof input === "string" ? input : JSON.stringify(input);
     const history: Array<Message> = [];
     const results: Record<string, string> = {};
+    const emitEvent = onEvent
+      ? wrapCallback(onEvent, loadedPolicy.createPolicy(), "callback")
+      : undefined;
 
     for (let round = 0; round < maxRounds; round += 1) {
       const promptValue =
@@ -64,7 +71,7 @@ export function supervisor(config: SupervisorConfig): Graph {
       const routing = routingResult.output;
 
       if (routingResult.status === "fallback-finish" && typeof supervisorOutput === "string") {
-        config.onEvent?.({
+        emitEvent?.({
           error: buildRoutingFallbackError(routingResult.reason),
           rawInput: supervisorOutput,
           timestamp: Date.now(),
@@ -72,7 +79,7 @@ export function supervisor(config: SupervisorConfig): Graph {
         });
       }
 
-      config.onEvent?.({
+      emitEvent?.({
         next: routing.next,
         round,
         timestamp: Date.now(),
@@ -80,7 +87,7 @@ export function supervisor(config: SupervisorConfig): Graph {
       });
 
       if (routing.next === "FINISH") {
-        config.onEvent?.({
+        emitEvent?.({
           rounds: round,
           timestamp: Date.now(),
           type: "supervisor.finish",
@@ -90,7 +97,7 @@ export function supervisor(config: SupervisorConfig): Graph {
 
       const worker = workerMap.get(routing.next);
       if (!worker) {
-        config.onEvent?.({
+        emitEvent?.({
           next: routing.next,
           round,
           timestamp: Date.now(),
@@ -107,7 +114,7 @@ export function supervisor(config: SupervisorConfig): Graph {
         history,
         round,
         provider,
-        config.onEvent
+        onEvent
       );
     }
 

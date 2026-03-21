@@ -4,6 +4,14 @@ import { getErrorMessage } from "../error-utils";
 import { debugLog } from "../telemetry/log";
 import type { AgentEvent } from "../types";
 
+/**
+ * EventBus - Internal framework event bus.
+ *
+ * IMPORTANT: Internal framework paths must use canonical AgentEvent types only.
+ * Do not add transport-specific transformations here. Policy/output transformations
+ * belong in adapters (e.g., agent-server), not in core framework internals.
+ */
+
 export interface EventBusOptions {
   readonly capacity?: number;
   readonly sessionId?: string;

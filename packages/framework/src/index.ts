@@ -32,8 +32,8 @@ export { InMemoryBlobStore } from "./blob/in-memory";
 export type { BlobStore } from "./blob/types";
 export type {
   Checkpoint,
-  CheckpointNodeResult,
   CheckpointBackend,
+  CheckpointNodeResult,
   CheckpointStore,
   DialectConfig,
   MemoryStore,
@@ -123,11 +123,22 @@ export type {
   EmbedOptions,
   EmbedResult,
 } from "./embeddings";
+export type { ErrorClass } from "./error-utils";
+// ============================================================================
+// ERROR UTILITIES
+// ============================================================================
+export {
+  classifyError,
+  getErrorMessage,
+  getErrorStack,
+  isRetryEligible,
+  NETWORK_ERROR_CODES,
+  toErrorRecord,
+} from "./error-utils";
 export { ExecTimeoutError } from "./exec";
 // ============================================================================
 // ORCHESTRATION, CONTROL FLOW, AND MULTI-AGENT
 // ============================================================================
-export { GraphValidationError } from "./graph/builder";
 /**
  * Build and validate a DAG computation graph from nodes and edges.
  * Validates entry existence, edge references, cycles, and orphan nodes.
@@ -142,7 +153,7 @@ export { GraphValidationError } from "./graph/builder";
  * })
  * ```
  */
-export { graph } from "./graph/builder";
+export { GraphValidationError, graph } from "./graph/builder";
 export { resumeGraph } from "./graph/resume";
 export type {
   Graph,
@@ -218,6 +229,17 @@ export type { SupervisorConfig } from "./multi-agent/supervisor";
  * ```
  */
 export { supervisor } from "./multi-agent/supervisor";
+export type {
+  CallbackPayload,
+  DefaultPublicPayload,
+  IterablePayload,
+  OutputMode,
+  OutputPolicy,
+  OutputPolicyConfig,
+  OutputPolicyContext,
+  OutputPolicyInput,
+} from "./output-policy";
+export { getOutputPolicy, resolveOutputMode } from "./output-policy";
 export type { InternalPlugin } from "./plugin";
 /**
  * Create a plugin (tool) from a declarative definition.
@@ -258,7 +280,6 @@ export { run } from "./runtime";
 // SECURITY SUBPATH RE-EXPORTS
 // ============================================================================
 export * from "./security/index";
-
 // ============================================================================
 // SERVICES AND OBSERVABILITY
 // ============================================================================
@@ -267,13 +288,12 @@ export { ConfigLive, ConfigService } from "./services/config";
 export type { EventBusService } from "./services/event-bus";
 export { EventBus, EventBusLive } from "./services/event-bus";
 export { StructuredOutputError, structuredAgent, zodToJsonSchema } from "./structured";
-export type { JsonSchema } from "./types/json-schema";
 export type { GenAiAttributes, SpanRecord } from "./telemetry";
 export {
   addSpanAttributes,
   clearRecordedSpans,
-  getRecordedSpans,
   debugLog,
+  getRecordedSpans,
   withSpan,
 } from "./telemetry";
 export {
@@ -320,21 +340,10 @@ export type {
 } from "./types/config";
 export * from "./types/constants";
 export * from "./types/events/index";
+export type { JsonSchema } from "./types/json-schema";
 export * from "./types/llm";
 export * from "./types/provider-error";
 export * from "./types/providers";
-// ============================================================================
-// ERROR UTILITIES
-// ============================================================================
-export {
-  classifyError,
-  getErrorMessage,
-  getErrorStack,
-  isRetryEligible,
-  NETWORK_ERROR_CODES,
-  toErrorRecord,
-} from "./error-utils";
-export type { ErrorClass } from "./error-utils";
 
 // ============================================================================
 // UTILITIES AND PROVIDER WRAPPERS

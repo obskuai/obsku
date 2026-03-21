@@ -1,14 +1,26 @@
-import type { AgentEvent, ConversationMessage, LLMProvider } from "@obsku/framework";
-import { toErrorRecord, NETWORK_ERROR_CODES } from "@obsku/framework";
-import { HTTP_STATUS, JSONRPC_VERSION } from "./constants";
+import type {
+  AgentEvent,
+  ConversationMessage,
+  DefaultPublicPayload,
+  LLMProvider,
+  OutputPolicy,
+} from "@obsku/framework";
+import {
+  getOutputPolicy,
+  NETWORK_ERROR_CODES,
+  type OutputMode,
+  resolveOutputMode,
+  toErrorRecord,
+} from "@obsku/framework";
 import {
   createErrorResponse,
-  createServerConfig,
   createSSEStream,
   parseJsonBody,
   resolveProvider,
 } from "./base-handler";
+import { HTTP_STATUS, JSONRPC_VERSION } from "./constants";
 import type { AgentLike, ServeOptions } from "./shared";
+import { createStrandsPolicy } from "./strands-policy";
 
 // Re-export for consumers that import createServerConfig via handler-utils
 export { createServerConfig } from "./base-handler";
@@ -48,6 +60,7 @@ export interface ExecutionContext {
   options?: {
     messages?: Array<ConversationMessage>;
     onEvent?: (event: AgentEvent) => void;
+    sessionId?: string;
   };
   provider: LLMProvider;
 }
@@ -57,6 +70,7 @@ export interface CreateExecutionContextOptions {
   messages?: Array<ConversationMessage>;
   onEvent?: (event: AgentEvent) => void;
   provider: LLMProvider;
+  sessionId?: string;
 }
 
 export function createHandlerErrorResponse(
@@ -200,25 +214,61 @@ export function executeWithContext(agent: AgentLike, context: ExecutionContext):
   return agent.run(context.input, context.provider, context.options);
 }
 
-export interface RunAgentInSSEOptions {
+export interface RunAgentInSSEOptions<
+  TPayload = DefaultPublicPayload<AgentEvent>,
+  TEvent extends AgentEvent = AgentEvent,
+> {
   agent: AgentLike;
   input: string;
   isAborted: () => boolean;
   messages?: Array<ConversationMessage>;
   onComplete?: () => void;
   onError: (error: unknown) => void;
-  onEvent: (event: AgentEvent) => void;
+  onEvent: (event: TransportEventPayload<TPayload>) => void;
   onPreRun?: () => void;
+  policy?: OutputPolicy<TEvent, TPayload>;
   provider: LLMProvider;
 }
 
-export async function runAgentInSSE(options: RunAgentInSSEOptions): Promise<void> {
+export type TransportEventPayload<TPayload = DefaultPublicPayload<AgentEvent>> = TPayload;
+
+function getTransportOutputPolicy(mode: OutputMode): OutputPolicy<AgentEvent, unknown> {
+  if (mode === "strands") {
+    return createStrandsPolicy();
+  }
+
+  return getOutputPolicy(mode);
+}
+
+const transportOutputPolicy = getTransportOutputPolicy(resolveOutputMode());
+
+export function wrapTransportEventCallback<
+  TPayload = DefaultPublicPayload<AgentEvent>,
+  TEvent extends AgentEvent = AgentEvent,
+  TResult = void,
+>(
+  callback: (event: TransportEventPayload<TPayload>) => TResult,
+  policy: OutputPolicy<TEvent, TPayload> = transportOutputPolicy as OutputPolicy<TEvent, TPayload>
+): (event: AgentEvent) => TResult {
+  return (event) =>
+    callback(
+      policy.emit({
+        context: { surface: "transport" },
+        event: event as TEvent,
+      }) as TransportEventPayload<TPayload>
+    );
+}
+
+export async function runAgentInSSE<
+  TPayload = DefaultPublicPayload<AgentEvent>,
+  TEvent extends AgentEvent = AgentEvent,
+>(options: RunAgentInSSEOptions<TPayload, TEvent>): Promise<void> {
   options.onPreRun?.();
   try {
     const ctx = createExecutionContext({
       input: options.input,
       messages: options.messages,
-      onEvent: options.onEvent,
+      onEvent: wrapTransportEventCallback(options.onEvent, options.policy),
       provider: options.provider,
     });
     await executeWithContext(options.agent, ctx);
@@ -239,7 +289,10 @@ export interface SSEStreamContext {
   send: (data: string) => void;
 }
 
-export interface RunAgentStreamOptions {
+export interface RunAgentStreamOptions<
+  TPayload = DefaultPublicPayload<AgentEvent>,
+  TEvent extends AgentEvent = AgentEvent,
+> {
   agent: AgentLike;
   /**
    * Factory called once the SSE stream is open.  Receives the raw stream
@@ -249,11 +302,12 @@ export interface RunAgentStreamOptions {
   buildCallbacks: (ctx: SSEStreamContext) => {
     onComplete?: () => void;
     onError: (error: unknown) => void;
-    onEvent: (event: AgentEvent) => void;
+    onEvent: (event: TransportEventPayload<TPayload>) => void;
     onPreRun?: () => void;
   };
   input: string;
   messages?: Array<ConversationMessage>;
+  policy?: OutputPolicy<TEvent, TPayload>;
   provider: LLMProvider;
   signal: AbortSignal;
   writeErr: (msg: string) => void;
@@ -263,7 +317,10 @@ export interface RunAgentStreamOptions {
  * Shared SSE orchestration: opens the stream, builds protocol callbacks, then
  * runs the agent.  Protocol-specific envelope/codec stays in `buildCallbacks`.
  */
-export function runAgentStream(options: RunAgentStreamOptions): Response {
+export function runAgentStream<
+  TPayload = DefaultPublicPayload<AgentEvent>,
+  TEvent extends AgentEvent = AgentEvent,
+>(options: RunAgentStreamOptions<TPayload, TEvent>): Response {
   const { agent, buildCallbacks, input, messages, provider, signal, writeErr } = options;
   return createSSEStream(
     signal,
@@ -278,6 +335,7 @@ export function runAgentStream(options: RunAgentStreamOptions): Response {
         onError: callbacks.onError,
         onEvent: callbacks.onEvent,
         onPreRun: callbacks.onPreRun,
+        policy: options.policy,
         provider,
       });
     },

@@ -1,6 +1,7 @@
 import { agent } from "../agent/index";
 import { DEFAULTS } from "../defaults";
 import { getErrorMessage } from "../error-utils";
+import type { DefaultPublicPayload } from "../output-policy/types";
 import type { AgentDef, AgentEvent, LLMProvider, Message } from "../types";
 import { appendAssistantHistory } from "./supervisor-history";
 
@@ -10,7 +11,7 @@ export async function dispatchToWorker(
   history: Array<Message>,
   round: number,
   provider: LLMProvider,
-  onEvent: ((event: AgentEvent) => void) | undefined
+  onEvent: ((event: DefaultPublicPayload<AgentEvent>) => void) | undefined
 ): Promise<string> {
   try {
     const workerResult = await agent(worker).run(input, provider, {
@@ -23,11 +24,13 @@ export async function dispatchToWorker(
         ? `${workerResult.slice(0, DEFAULTS.supervisor.outputPreviewLength)}...`
         : workerResult.slice(0, DEFAULTS.supervisor.outputPreviewLength);
     onEvent?.({
-      output: truncatedResult,
-      round,
+      data: {
+        output: truncatedResult,
+        round,
+        worker: worker.name,
+      },
       timestamp: Date.now(),
       type: "supervisor.worker.output",
-      worker: worker.name,
     });
     return trimmedResult;
   } catch (error: unknown) {

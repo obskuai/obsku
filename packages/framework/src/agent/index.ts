@@ -1,6 +1,10 @@
 import { Effect, Layer } from "effect";
 import { DEFAULTS } from "../defaults";
 import { generateId } from "../id-utils";
+import { wrapAsyncIterable, wrapCallback } from "../output-policy/boundary";
+import type { LoadedPolicy } from "../output-policy/loader";
+import { loadOutputPolicy } from "../output-policy/loader";
+import type { DefaultPublicPayload } from "../output-policy/types";
 import { plugin as createPlugin } from "../plugin/index";
 import { makeConfigLayer } from "../services/config";
 import { destroySessionEventBus, EventBus, getSessionEventBus } from "../services/event-bus";
@@ -56,9 +60,9 @@ export interface Agent {
   run(input: string, provider: LLMProvider, options?: AgentRunOptions): Promise<string>;
   /**
    * Subscribe to the agent's event stream without running it.
-   * Returns an async iterable of typed AgentEvent objects for real-time UI or logging.
+   * Returns an async iterable of policy-shaped public payload objects for real-time UI or logging.
    * @param options - Optional session ID and event bus capacity.
-   * @returns Async iterable that yields AgentEvent objects as they occur.
+   * @returns Async iterable that yields public payload objects as they occur.
    * @example
    * ```ts
    * const events = await myAgent.subscribe()
@@ -67,7 +71,7 @@ export interface Agent {
    */
   subscribe(
     options?: Pick<AgentRunOptions, "eventBusCapacity" | "sessionId">
-  ): Promise<AsyncIterable<AgentEvent>>;
+  ): Promise<AsyncIterable<DefaultPublicPayload<AgentEvent>>>;
 }
 
 function startOnEventForwarder(
@@ -191,10 +195,16 @@ async function executeAgentProgram(
   eventBusLayer: ReturnType<typeof buildEffectLayers>["eventBusLayer"],
   eventBus: Awaited<ReturnType<typeof getSessionEventBus>>,
   onEvent: AgentRunOptions["onEvent"],
+  policy: ReturnType<typeof loadOutputPolicy>["policy"],
   ownsSessionBus: boolean,
   sessionId: string
 ) {
-  const stopForwarder = onEvent ? startOnEventForwarder(eventBus, onEvent) : undefined;
+  const wrappedOnEvent = onEvent
+    ? wrapCallback(onEvent as (event: ReturnType<typeof policy.emit>) => void, policy, "callback")
+    : undefined;
+  const stopForwarder = wrappedOnEvent
+    ? startOnEventForwarder(eventBus, wrappedOnEvent)
+    : undefined;
 
   try {
     const execution = Effect.scoped(
@@ -214,17 +224,23 @@ async function executeAgentProgram(
   }
 }
 
-function createAgentSubscriptionMethod(): Agent["subscribe"] {
+function createAgentSubscriptionMethod(loadedPolicy: LoadedPolicy): Agent["subscribe"] {
   return async (options) => {
     const sessionId = options?.sessionId ?? generateId("session");
     const eventBus = await createSessionBus(sessionId, options?.eventBusCapacity);
-    return eventBus.subscribe();
+    const rawIterable = eventBus.subscribe();
+    return wrapAsyncIterable(rawIterable, loadedPolicy.createPolicy(), "iterable");
   };
 }
 
-function createAgentRunMethod(def: AgentDef, setupCtx: SetupContext): Agent["run"] {
+function createAgentRunMethod(
+  def: AgentDef,
+  setupCtx: SetupContext,
+  loadedPolicy: LoadedPolicy
+): Agent["run"] {
   return async (input, provider, options) => {
     const opts = options ?? {};
+    const policy = loadedPolicy.createPolicy();
     const sessionId = opts.sessionId ?? generateId("session");
     const ownsSessionBus = opts.sessionId === undefined;
     const eventBus = await createSessionBus(sessionId, opts.eventBusCapacity);
@@ -259,6 +275,7 @@ function createAgentRunMethod(def: AgentDef, setupCtx: SetupContext): Agent["run
           eventBusLayer,
           eventBus,
           opts.onEvent,
+          policy,
           ownsSessionBus,
           sessionId
         ),
@@ -284,11 +301,12 @@ function createAgentRunMethod(def: AgentDef, setupCtx: SetupContext): Agent["run
  * ```
  */
 export function agent(def: AgentDef): Agent {
+  const loadedPolicy = loadOutputPolicy();
   const setupCtx = setupPlugins(def);
 
   return {
     name: def.name,
-    subscribe: createAgentSubscriptionMethod(),
-    run: createAgentRunMethod(def, setupCtx),
+    subscribe: createAgentSubscriptionMethod(loadedPolicy),
+    run: createAgentRunMethod(def, setupCtx, loadedPolicy),
   };
 }

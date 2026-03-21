@@ -2,17 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { GraphValidationError, graph } from "../../src/graph/builder";
 import { executeGraph } from "../../src/graph/executor";
 import type { GraphNode } from "../../src/graph/types";
+import type { DefaultPublicPayload } from "../../src/output-policy";
+import type { AgentEvent } from "../../src/types";
 import { makeEdge, makeNode, minimalMockProvider } from "../utils/helpers";
 
 // --- Local Helper (different signature from shared) ---
-
-function fnNode(id: string, fn: () => Promise<unknown>): GraphNode {
-  return {
-    description: `Node ${id}`,
-    executor: async () => fn(),
-    id,
-  };
-}
 
 function fnNode(id: string, fn: () => Promise<unknown>): GraphNode {
   return {
@@ -164,22 +158,32 @@ describe("executeGraph() cycles", () => {
   });
 
   test("emits graph.cycle.start and graph.cycle.complete events", async () => {
-    const events: Array<{ type: string } & Record<string, unknown>> = [];
+    const events: Array<DefaultPublicPayload<AgentEvent>> = [];
     const nodes = [fnNode("A", async () => "a"), fnNode("B", async () => "b")];
     const edges = [makeEdge("A", "B"), makeEdge("B", "A", { back: true, maxIterations: 2 })];
 
     const g = graph({ edges, entry: "A", nodes, provider: minimalMockProvider });
-    const result = await executeGraph(g, (event) =>
-      events.push(event as { type: string } & Record<string, unknown>)
-    );
+    const result = await executeGraph(g, (event) => events.push(event));
 
     expect(result.status).toBe("Complete");
-    const starts = events.filter((event) => event.type === "graph.cycle.start");
-    const completes = events.filter((event) => event.type === "graph.cycle.complete");
+    const starts = events.filter(
+      (event): event is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.cycle.start" }>> =>
+        event.type === "graph.cycle.start"
+    );
+    const completes = events.filter(
+      (
+        event
+      ): event is DefaultPublicPayload<Extract<AgentEvent, { type: "graph.cycle.complete" }>> =>
+        event.type === "graph.cycle.complete"
+    );
     expect(starts).toHaveLength(2);
     expect(completes).toHaveLength(2);
-    expect(starts[0]).toMatchObject({ from: "B", iteration: 1, maxIterations: 2, to: "A" });
-    expect(completes[1]).toMatchObject({ from: "B", iteration: 2, maxIterations: 2, to: "A" });
+    expect(starts[0]).toMatchObject({
+      data: { from: "B", iteration: 1, maxIterations: 2, to: "A" },
+    });
+    expect(completes[1]).toMatchObject({
+      data: { from: "B", iteration: 2, maxIterations: 2, to: "A" },
+    });
   });
 
   test("fails fast when a cycle node fails", async () => {
