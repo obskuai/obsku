@@ -7,6 +7,20 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+async function waitFor<T>(getValue: () => T | undefined, timeoutMs = 500): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const value = getValue();
+    if (value !== undefined) {
+      return value;
+    }
+    await delay(10);
+  }
+
+  throw new Error("timed out waiting for value");
+}
+
 describe("bg.task.* events", () => {
   let events: Array<DefaultPublicPayload<AgentEvent>> = [];
 
@@ -128,13 +142,16 @@ describe("bg.task.* events", () => {
       return "done";
     });
 
-    await delay(80);
-
-    const completedEvents = events.filter(
-      (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
-        e.type === "bg.task.completed"
+    const completedEvent = await waitFor(
+      () =>
+        events.find(
+          (e): e is DefaultPublicPayload<Extract<AgentEvent, { type: "bg.task.completed" }>> =>
+            e.type === "bg.task.completed"
+        ),
+      1_000
     );
-    expect(completedEvents[0].data.duration).toBeGreaterThanOrEqual(50);
+
+    expect(completedEvent.data.duration).toBeGreaterThanOrEqual(50);
   });
 
   test("failed event includes error message for non-Error throws", async () => {
