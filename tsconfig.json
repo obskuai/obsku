@@ -20,7 +20,8 @@
       "@obsku/tool-code-interpreter": ["./packages/tools/code-interpreter/src"],
       "@obsku/tool-code-interpreter-wasm": ["./packages/tools/code-interpreter-wasm/src"],
 
-      "@obsku/cli": ["./packages/cli/src"]
+      "@obsku/cli": ["./packages/cli/src"],
+      "@obsku/studio": ["./packages/studio/src"]
     }
   },
   "references": [
@@ -46,7 +47,8 @@
     { "path": "./packages/tools/code-interpreter-agentcore" },
 
     { "path": "./packages/cli" },
-    { "path": "./packages/benchmark" }
+    { "path": "./packages/benchmark" },
+    { "path": "./packages/studio" }
   ],
   "exclude": ["node_modules", "dist", "build", "packages/*/dist"],
   "files": []

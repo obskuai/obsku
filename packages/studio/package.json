@@ -1,0 +1,102 @@
+{
+  "name": "@obsku/studio",
+  "version": "0.1.0",
+  "description": "Visual studio for @obsku/framework - scan, visualize, and interact with agents",
+  "keywords": [
+    "obsku",
+    "studio",
+    "agent",
+    "ai",
+    "visualization",
+    "typescript"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obskuai/obsku.git",
+    "directory": "packages/studio"
+  },
+  "author": "Obsku Team <team@obsku.dev>",
+  "type": "module",
+  "bin": {
+    "obsku-studio": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts src/cli.ts --outdir dist --target node && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly --outDir dist && vite build --config src/frontend/vite.config.ts",
+    "dev": "vite --config src/frontend/vite.config.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "prepack": "bun run ../../scripts/resolve-workspace-deps.ts",
+    "postpack": "bun run ../../scripts/restore-workspace-deps.ts"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "^0.12.19",
+    "@assistant-ui/react-markdown": "^0.12.6",
+    "@hono/node-server": "^1.13.8",
+    "@obsku/framework": "workspace:*",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@xyflow/react": "^12.10.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.577.0",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.1",
+    "ts-morph": "^27.0.2",
+    "vaul": "^1.1.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.8.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^25.2.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "happy-dom": "^20.8.4",
+    "hono": "^4.7.4",
+    "jsdom": "^29.0.1",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1"
+  },
+  "files": [
+    "dist/",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "homepage": "https://github.com/obskuai/obsku/tree/main/packages/studio",
+  "bugs": {
+    "url": "https://github.com/obskuai/obsku/issues"
+  }
+}
