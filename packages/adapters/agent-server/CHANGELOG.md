@@ -1,5 +1,13 @@
 # @obsku/adapter-agent-server
 
+## 0.2.5
+
+### Patch Changes
+
+- 72fbf7c: Release the output policy event surface alignment and adapter streaming fixes.
+- Updated dependencies [72fbf7c]
+  - @obsku/framework@0.2.3
+
 ## 0.2.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-code-interpreter-wasm",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "WASM sandboxed code interpreter for @obsku/framework",
   "keywords": [
     "obsku",
