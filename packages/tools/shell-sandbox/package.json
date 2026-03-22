@@ -1,6 +1,6 @@
 {
   "name": "@obsku/tool-shell-sandbox",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Sandboxed shell execution tool using just-bash for @obsku/framework",
   "keywords": [
     "obsku",

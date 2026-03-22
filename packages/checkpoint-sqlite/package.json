@@ -1,6 +1,6 @@
 {
   "name": "@obsku/checkpoint-sqlite",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "SQLite checkpoint storage backend for @obsku/framework",
   "keywords": [
     "obsku",

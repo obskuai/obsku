@@ -1,5 +1,11 @@
 # @obsku/framework
 
+## 0.2.3
+
+### Patch Changes
+
+- 72fbf7c: Release the output policy event surface alignment and adapter streaming fixes.
+
 ## 0.2.2
 
 ### Patch Changes

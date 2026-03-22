@@ -1,5 +1,14 @@
 # @obsku/benchmark
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [72fbf7c]
+  - @obsku/framework@0.2.3
+  - @obsku/checkpoint-sqlite@0.2.3
+  - @obsku/provider-bedrock@0.2.3
+
 ## 0.1.3
 
 ### Patch Changes
