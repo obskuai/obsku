@@ -116,6 +116,27 @@ export const GraphDetailResponse = z.object({
   graph: GraphDisplaySchema,
 });
 
+export const ProviderIdSchema = z.enum(["bedrock", "anthropic", "google", "groq", "openai"]);
+
+export const ProviderInfoSchema = z.object({
+  id: ProviderIdSchema,
+  name: z.string(),
+  detected: z.boolean(),
+  defaultModel: z.string(),
+  models: z.array(z.string()),
+});
+
+export const ActiveProviderSchema = z.object({
+  id: ProviderIdSchema,
+  source: z.enum(["config", "heuristic", "fallback"]),
+});
+
+export const ProvidersResponseSchema = z.object({
+  success: z.literal(true),
+  providers: z.array(ProviderInfoSchema),
+  active: ActiveProviderSchema,
+});
+
 // =============================================================================
 // Session Schemas
 // =============================================================================
@@ -154,6 +175,8 @@ export const ChatRequest = z.object({
   message: z.string().min(1),
   sessionId: z.string().optional(),
   agentName: z.string().min(1),
+  provider: z.enum(["bedrock", "anthropic", "google", "groq", "openai"]).optional(),
+  model: z.string().optional(),
   stream: z.boolean().optional(),
 });
 
@@ -230,6 +253,7 @@ export const ApiResponse = z.union([
   AgentDetailResponse,
   GraphListResponse,
   GraphDetailResponse,
+  ProvidersResponseSchema,
   SessionListResponse,
   SessionDetailResponse,
   ChatResponse,
@@ -246,6 +270,9 @@ export type AgentListResponseType = z.infer<typeof AgentListResponse>;
 export type AgentDetailResponseType = z.infer<typeof AgentDetailResponse>;
 export type GraphListResponseType = z.infer<typeof GraphListResponse>;
 export type GraphDetailResponseType = z.infer<typeof GraphDetailResponse>;
+export type ProviderInfoType = z.infer<typeof ProviderInfoSchema>;
+export type ActiveProviderType = z.infer<typeof ActiveProviderSchema>;
+export type ProvidersResponseType = z.infer<typeof ProvidersResponseSchema>;
 export type SessionListResponseType = z.infer<typeof SessionListResponse>;
 export type SessionDetailResponseType = z.infer<typeof SessionDetailResponse>;
 export type ChatRequestType = z.infer<typeof ChatRequest>;

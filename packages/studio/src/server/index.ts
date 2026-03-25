@@ -7,15 +7,17 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { loadStudioConfig } from "../scanner/config-loader.js";
+import { detectProviders } from "../scanner/provider-scanner.js";
 import { Registry } from "../scanner/registry.js";
 import { eventBridge as defaultEventBridge } from "./event-bridge.js";
 import type { EventRecorder } from "./executable-agent-registry.js";
 import { RegistryBackedExecutableAgentRegistry } from "./executable-agent-registry.js";
-import { resolveProvider } from "./provider-adapter.js";
+import { createAdapter, resolveProvider } from "./provider-adapter.js";
 import type { RegistryReader } from "./routes/agents.js";
 import { createAgentsRoute } from "./routes/agents.js";
 import { type ChatAgentRegistry, createChatRoute, type ExecutableAgent } from "./routes/chat.js";
 import { createEventsRoute, type EventBridgeSubscriber } from "./routes/events.js";
+import { createProvidersRoute } from "./routes/providers.js";
 import { createSessionsRoute, type SessionEventStore } from "./routes/sessions.js";
 
 export const STUDIO_VERSION = "0.1.0";
@@ -87,7 +89,8 @@ export function createApp(options: StudioAppOptions = {}): Hono {
   const getProviderResolution = async (): Promise<ReturnType<typeof resolveProvider>> => {
     providerResolutionPromise ??= (async () => {
       const configResult = await loadStudioConfig(rootDir);
-      return resolveProvider(configResult?.config ?? {}, []);
+      const detectedProviders = await detectProviders(rootDir ?? process.cwd());
+      return resolveProvider(configResult?.config ?? {}, detectedProviders);
     })();
 
     return providerResolutionPromise;
@@ -172,6 +175,21 @@ export function createApp(options: StudioAppOptions = {}): Hono {
   );
 
   app.route(
+    "/api",
+    createProvidersRoute({
+      rootDir,
+      getProviderResolution: async (detectedProviders) => {
+        providerResolutionPromise ??= (async () => {
+          const configResult = await loadStudioConfig(rootDir);
+          return resolveProvider(configResult?.config ?? {}, detectedProviders);
+        })();
+
+        return providerResolutionPromise;
+      },
+    })
+  );
+
+  app.route(
     "/api/events",
     createEventsRoute({
       eventBridge,
@@ -211,6 +229,25 @@ export function createApp(options: StudioAppOptions = {}): Hono {
             return (currentRegistry as Record<string, ExecutableAgent>)[agentName];
           })();
         },
+      },
+      getSessionExecutable(agentName, runtime) {
+        return (async () => {
+          const currentRegistry = getSharedRegistry();
+          if (!(currentRegistry instanceof Registry)) {
+            return undefined;
+          }
+
+          const sessionRegistry = new RegistryBackedExecutableAgentRegistry(
+            currentRegistry,
+            {
+              provider: createAdapter(runtime.provider, runtime.model),
+              source: "config",
+            },
+            sharedEventRecorder
+          );
+
+          return sessionRegistry.getExecutable(agentName);
+        })();
       },
     })
   );
