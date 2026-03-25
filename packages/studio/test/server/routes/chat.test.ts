@@ -1,8 +1,22 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { createApp } from "../../../src/server/index.js";
-import type { ChatAgentEvent, ExecutableAgent } from "../../../src/server/routes/chat.js";
+import type { StudioProviderId } from "../../../src/server/provider-adapter.js";
+import {
+  type ChatAgentEvent,
+  createChatRoute,
+  type ExecutableAgent,
+} from "../../../src/server/routes/chat.js";
 
 class MockExecutableAgent implements ExecutableAgent {
+  constructor(
+    private readonly runtime?: {
+      provider: StudioProviderId;
+      model: string;
+    }
+  ) {}
+
   calls: Array<{ input: string; sessionId?: string }> = [];
 
   async run(
@@ -17,13 +31,23 @@ class MockExecutableAgent implements ExecutableAgent {
     options?.onEvent?.({
       type: "stream.chunk",
       timestamp: Date.now(),
-      data: { content: "Hello", phase: "executing" },
+      data: {
+        content: "Hello",
+        phase: "executing",
+        runtimeModel: this.runtime?.model,
+        runtimeProvider: this.runtime?.provider,
+      },
     } as ChatAgentEvent);
     await Promise.resolve();
     options?.onEvent?.({
       type: "stream.chunk",
       timestamp: Date.now(),
-      data: { content: " world", phase: "executing" },
+      data: {
+        content: " world",
+        phase: "executing",
+        runtimeModel: this.runtime?.model,
+        runtimeProvider: this.runtime?.provider,
+      },
     } as ChatAgentEvent);
 
     return "Hello world";
@@ -65,6 +89,25 @@ afterEach(async () => {
 
   openResponses.clear();
 });
+
+function createChatApp(options: Parameters<typeof createChatRoute>[0]): Hono {
+  const app = new Hono();
+  app.route("/api", createChatRoute(options));
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      return c.json(
+        {
+          error: err.message,
+          code: `HTTP_${err.status}`,
+        },
+        err.status
+      );
+    }
+
+    throw err;
+  });
+  return app;
+}
 
 describe("Chat API route", () => {
   it("rejects invalid chat payloads", async () => {
@@ -134,5 +177,123 @@ describe("Chat API route", () => {
     expect(output).toContain('"text":"Hello"');
     expect(output).toContain('"text":"Hello world"');
     expect(output).toContain("event: done");
+  });
+
+  it("uses an explicit provider/model adapter for a new session", async () => {
+    const defaultAgent = new MockExecutableAgent({
+      provider: "bedrock",
+      model: "amazon.nova-lite-v1:0",
+    });
+    const explicitAgent = new MockExecutableAgent({ provider: "openai", model: "gpt-4o-mini" });
+    const explicitSelections: Array<{
+      agentName: string;
+      provider: StudioProviderId;
+      model: string;
+    }> = [];
+    const app = createChatApp({
+      agentRegistry: { reviewer: defaultAgent },
+      getSessionExecutable: async (agentName, runtime) => {
+        explicitSelections.push({ agentName, provider: runtime.provider, model: runtime.model });
+        return explicitAgent;
+      },
+    });
+
+    const response = await app.request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentName: "reviewer",
+        message: "Review this",
+        provider: "openai",
+        model: "gpt-4o-mini",
+      }),
+    });
+    openResponses.add(response);
+
+    expect(response.status).toBe(200);
+    const output = await readStream(response);
+
+    expect(explicitSelections).toEqual([
+      { agentName: "reviewer", provider: "openai", model: "gpt-4o-mini" },
+    ]);
+    expect(defaultAgent.calls).toEqual([]);
+    expect(explicitAgent.calls).toHaveLength(1);
+    expect(output).toContain("event: done");
+  });
+
+  it("uses the default registry executable when provider/model are omitted", async () => {
+    const defaultAgent = new MockExecutableAgent({
+      provider: "bedrock",
+      model: "amazon.nova-lite-v1:0",
+    });
+    let explicitCallCount = 0;
+    const app = createChatApp({
+      agentRegistry: { reviewer: defaultAgent },
+      getSessionExecutable: async () => {
+        explicitCallCount += 1;
+        return undefined;
+      },
+    });
+
+    const response = await app.request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentName: "reviewer",
+        message: "Review this",
+        sessionId: "session-default",
+      }),
+    });
+    openResponses.add(response);
+
+    expect(response.status).toBe(200);
+    await readStream(response);
+
+    expect(explicitCallCount).toBe(0);
+    expect(defaultAgent.calls).toEqual([{ input: "Review this", sessionId: "session-default" }]);
+  });
+
+  it("rejects provider/model changes after the first message in a session", async () => {
+    const defaultAgent = new MockExecutableAgent({
+      provider: "bedrock",
+      model: "amazon.nova-lite-v1:0",
+    });
+    const app = createChatApp({
+      agentRegistry: { reviewer: defaultAgent },
+      getSessionExecutable: async () =>
+        new MockExecutableAgent({ provider: "openai", model: "gpt-4o-mini" }),
+    });
+
+    const firstResponse = await app.request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentName: "reviewer",
+        message: "First turn",
+        sessionId: "session-locked",
+      }),
+    });
+    openResponses.add(firstResponse);
+
+    expect(firstResponse.status).toBe(200);
+    await readStream(firstResponse);
+
+    const secondResponse = await app.request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentName: "reviewer",
+        message: "Second turn",
+        sessionId: "session-locked",
+        provider: "openai",
+        model: "gpt-4o-mini",
+      }),
+    });
+
+    expect(secondResponse.status).toBe(400);
+    expect(await secondResponse.json()).toEqual({
+      code: "HTTP_400",
+      error: "provider/model locked for this session",
+    });
   });
 });

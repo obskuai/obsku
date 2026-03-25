@@ -2,8 +2,14 @@ import type { AgentEvent, DefaultPublicPayload } from "@obsku/framework";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ChatRequest } from "../../shared/schemas.js";
+import type { StudioProviderId } from "../provider-adapter.js";
 
 export type ChatAgentEvent = DefaultPublicPayload<AgentEvent>;
+
+interface SessionRuntimeSelection {
+  provider: StudioProviderId;
+  model: string;
+}
 
 export interface ExecutableAgentRunOptions {
   sessionId?: string;
@@ -27,6 +33,10 @@ export type ChatAgentRegistry =
 
 export interface ChatRouteOptions {
   agentRegistry?: ChatAgentRegistry;
+  getSessionExecutable?: (
+    agentName: string,
+    runtime: SessionRuntimeSelection
+  ) => Promise<ExecutableAgent | undefined>;
 }
 
 async function resolveAgent(
@@ -71,8 +81,31 @@ function stripThinkingBlocks(text: string): string {
   return visible.trimStart();
 }
 
+function getRuntimeSelection(event: ChatAgentEvent): SessionRuntimeSelection | undefined {
+  const data = event.data as Record<string, unknown>;
+  const runtimeProvider = data.runtimeProvider;
+  const runtimeModel = data.runtimeModel;
+
+  if (typeof runtimeProvider !== "string" || typeof runtimeModel !== "string") {
+    return undefined;
+  }
+
+  return {
+    provider: runtimeProvider as StudioProviderId,
+    model: runtimeModel,
+  };
+}
+
+function matchesRuntimeSelection(
+  current: SessionRuntimeSelection,
+  next: SessionRuntimeSelection
+): boolean {
+  return current.provider === next.provider && current.model === next.model;
+}
+
 export function createChatRoute(options: ChatRouteOptions = {}): Hono {
   const app = new Hono();
+  const sessionRuntimeSelections = new Map<string, SessionRuntimeSelection>();
 
   app.post("/chat", async (c) => {
     let payload: unknown;
@@ -92,7 +125,30 @@ export function createChatRoute(options: ChatRouteOptions = {}): Hono {
     }
 
     const { agentName, message } = parsed.data;
-    const agent = await resolveAgent(options.agentRegistry, agentName);
+    const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
+    const requestedRuntime =
+      parsed.data.provider && parsed.data.model
+        ? {
+            provider: parsed.data.provider,
+            model: parsed.data.model,
+          }
+        : undefined;
+    const lockedRuntime = sessionRuntimeSelections.get(sessionId);
+
+    if (
+      requestedRuntime &&
+      lockedRuntime &&
+      !matchesRuntimeSelection(lockedRuntime, requestedRuntime)
+    ) {
+      throw new HTTPException(400, {
+        message: "provider/model locked for this session",
+      });
+    }
+
+    const agent = requestedRuntime
+      ? ((await options.getSessionExecutable?.(agentName, requestedRuntime)) ??
+        (await resolveAgent(options.agentRegistry, agentName)))
+      : await resolveAgent(options.agentRegistry, agentName);
 
     if (!agent) {
       throw new HTTPException(404, {
@@ -100,7 +156,10 @@ export function createChatRoute(options: ChatRouteOptions = {}): Hono {
       });
     }
 
-    const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
+    if (requestedRuntime) {
+      sessionRuntimeSelections.set(sessionId, requestedRuntime);
+    }
+
     const encoder = new TextEncoder();
     let closed = false;
     let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
@@ -141,6 +200,11 @@ export function createChatRoute(options: ChatRouteOptions = {}): Hono {
             const result = await agent.run(message, {
               sessionId,
               onEvent: (event) => {
+                const runtimeSelection = getRuntimeSelection(event);
+                if (runtimeSelection && !sessionRuntimeSelections.has(sessionId)) {
+                  sessionRuntimeSelections.set(sessionId, runtimeSelection);
+                }
+
                 const chunk = getTextChunk(event);
                 if (!chunk) {
                   return;
