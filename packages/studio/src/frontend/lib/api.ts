@@ -7,6 +7,7 @@ import {
   EventDisplaySchema,
   GraphDetailResponse,
   GraphListResponse,
+  ProvidersResponseSchema,
   SessionDetailResponse,
   SessionListResponse,
 } from "../../shared/schemas";
@@ -97,6 +98,10 @@ export async function listGraphs() {
 
 export async function getGraph(id: string) {
   return fetchJson(`/api/graphs/${encodeURIComponent(id)}`, GraphDetailResponse);
+}
+
+export async function listProviders() {
+  return fetchJson("/api/providers", ProvidersResponseSchema);
 }
 
 export async function listSessions(page = 1, limit = 20) {

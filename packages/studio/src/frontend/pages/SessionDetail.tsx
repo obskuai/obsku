@@ -188,6 +188,7 @@ export function SessionDetail() {
           {session ? (
             <Badge variant={getStatusVariant(session.status)}>{session.status}</Badge>
           ) : null}
+          {session?.runtimeProvider ? <Badge variant="outline">{session.runtimeProvider}</Badge> : null}
           {session?.runtimeModel ? <Badge variant="outline">{session.runtimeModel}</Badge> : null}
           <Badge variant="outline">{events.length} Events</Badge>
         </div>

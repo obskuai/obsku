@@ -82,6 +82,7 @@ export function SessionList() {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Title</TableHead>
+              <TableHead>Provider</TableHead>
               <TableHead>Model</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
@@ -91,19 +92,19 @@ export function SessionList() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Loading sessions...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   {error}
                 </TableCell>
               </TableRow>
             ) : sessions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No sessions found.
                 </TableCell>
               </TableRow>
@@ -116,6 +117,9 @@ export function SessionList() {
                     </Link>
                   </TableCell>
                   <TableCell>{session.title}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {session.runtimeProvider ?? "—"}
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {session.runtimeModel ?? "-"}
                   </TableCell>

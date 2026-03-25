@@ -12,8 +12,9 @@ import { Bot, MessageSquare, SendHorizonal } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import type { ChatRequestType, ProvidersResponseType } from "../../shared/schemas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { ApiError, getAgent, listAgents, postChat } from "../lib/api";
+import { ApiError, getAgent, listAgents, listProviders, postChat } from "../lib/api";
 import { cn } from "../lib/utils";
 
 export const CHAT_AGENTS = [] as const;
@@ -140,6 +141,8 @@ export async function* streamChatResponse(
 export function createChatModelAdapter(options: {
   agentName: string;
   onSessionId?: (sessionId: string) => void;
+  provider?: ChatRequestType["provider"];
+  model?: string;
   sessionId?: string;
 }): ChatModelAdapter {
   return {
@@ -153,6 +156,8 @@ export function createChatModelAdapter(options: {
         {
           message: prompt,
           agentName: options.agentName,
+          provider: options.provider,
+          model: options.model,
           sessionId: options.sessionId,
         },
         abortSignal
@@ -165,16 +170,20 @@ export function createChatModelAdapter(options: {
 
 function ChatRuntime({
   agentName,
+  model,
   onSessionId,
+  provider,
   sessionId,
 }: {
   agentName: string;
+  model?: string;
   onSessionId: (sessionId: string) => void;
+  provider?: ChatRequestType["provider"];
   sessionId?: string;
 }) {
   const adapter = useMemo(
-    () => createChatModelAdapter({ agentName, onSessionId, sessionId }),
-    [agentName, onSessionId, sessionId]
+    () => createChatModelAdapter({ agentName, onSessionId, provider, model, sessionId }),
+    [agentName, model, onSessionId, provider, sessionId]
   );
   const runtime = useLocalRuntime(adapter);
 
@@ -264,7 +273,10 @@ function ChatBubble({ children, role }: { children: ReactNode; role: ThreadMessa
 export default function Chat() {
   const [searchParams] = useSearchParams();
   const [agents, setAgents] = useState<Array<{ label: string; value: string }>>([]);
+  const [providers, setProviders] = useState<ProvidersResponseType | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>(searchParams.get("agent") ?? "");
+  const [selectedProvider, setSelectedProvider] = useState<ChatRequestType["provider"]>(undefined);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [runtimeModel, setRuntimeModel] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
@@ -282,23 +294,45 @@ export default function Chat() {
       setAgentError(null);
 
       try {
-        const response = await listAgents();
+        const [agentsResponse, providersResponse] = await Promise.all([
+          listAgents(),
+          listProviders(),
+        ]);
         if (!isMounted) {
           return;
         }
 
-        const nextAgents = response.agents.map((agent) => ({
+        const nextAgents = agentsResponse.agents.map((agent) => ({
           label: agent.name,
           value: agent.name,
         }));
 
         setAgents(nextAgents);
+        setProviders(providersResponse);
         setSelectedAgent((current) => {
           if (current && nextAgents.some((agent) => agent.value === current)) {
             return current;
           }
 
           return nextAgents[0]?.value ?? "";
+        });
+        setSelectedProvider((current) => {
+          if (current && providersResponse.providers.some((provider) => provider.id === current)) {
+            return current;
+          }
+
+          return providersResponse.active.id;
+        });
+        setSelectedModel((current) => {
+          const activeProvider = providersResponse.providers.find(
+            (provider) => provider.id === providersResponse.active.id
+          );
+
+          if (current && activeProvider?.models.includes(current)) {
+            return current;
+          }
+
+          return activeProvider?.defaultModel ?? "";
         });
       } catch (error) {
         if (!isMounted) {
@@ -390,6 +424,70 @@ export default function Chat() {
                 </option>
               ))}
             </select>
+            {providers && !sessionId ? (
+              <>
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="chat-provider-selector"
+                >
+                  Provider
+                </label>
+                <select
+                  id="chat-provider-selector"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+                  value={selectedProvider}
+                  onChange={(event) => {
+                    const id = event.target.value as ChatRequestType["provider"];
+                    setSelectedProvider(id);
+                    const provider = providers.providers.find((item) => item.id === id);
+                    if (provider) {
+                      setSelectedModel(provider.defaultModel);
+                    }
+                  }}
+                  disabled={!!sessionId}
+                >
+                  {providers.providers.map((provider) => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.detected ? "✓ " : ""}
+                      {provider.name}
+                      {provider.id === providers.active.id ? " (active)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="chat-model-selector"
+                >
+                  Model
+                </label>
+                <select
+                  id="chat-model-selector"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500"
+                  value={selectedModel}
+                  onChange={(event) => setSelectedModel(event.target.value)}
+                  disabled={!!sessionId}
+                >
+                  {providers.providers
+                    .find((provider) => provider.id === selectedProvider)
+                    ?.models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    )) ?? <option value="">Select provider first</option>}
+                </select>
+                <p className="text-xs text-slate-500">
+                  {providers.active.source === "heuristic"
+                    ? "Detected from project"
+                    : providers.active.source === "config"
+                      ? "From config"
+                      : "Default fallback"}
+                </p>
+              </>
+            ) : sessionId && providers ? (
+              <p className="text-xs text-slate-500">
+                Provider: {selectedProvider} / Model: {selectedModel} (locked)
+              </p>
+            ) : null}
             <p className="text-xs text-slate-500">
               {isLoadingAgents
                 ? "Loading agents..."
@@ -405,7 +503,13 @@ export default function Chat() {
       </div>
 
       {selectedAgent ? (
-        <ChatRuntime agentName={selectedAgent} onSessionId={setSessionId} sessionId={sessionId} />
+        <ChatRuntime
+          agentName={selectedAgent}
+          model={selectedModel}
+          onSessionId={setSessionId}
+          provider={selectedProvider}
+          sessionId={sessionId}
+        />
       ) : (
         <Card className="border-slate-200 bg-white/90 shadow-sm">
           <CardContent className="py-12 text-center text-muted-foreground">

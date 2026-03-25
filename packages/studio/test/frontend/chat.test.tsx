@@ -33,8 +33,21 @@ describe("Chat page", () => {
     const originalFetch = globalThis.fetch;
 
     const mockFetch = Object.assign(
-      async () =>
-        new Response(
+      async (input: RequestInfo | URL) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        if (url.includes('/api/providers')) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              providers: [
+                { id: 'bedrock', name: 'Amazon Bedrock', detected: true, defaultModel: 'amazon.nova-lite-v1:0', models: ['amazon.nova-lite-v1:0'] },
+              ],
+              active: { id: 'bedrock', source: 'fallback' },
+            }),
+            { headers: { 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        return new Response(
           JSON.stringify({
             success: true,
             agents: [
@@ -43,7 +56,8 @@ describe("Chat page", () => {
             ],
           }),
           { headers: { "Content-Type": "application/json" }, status: 200 }
-        ),
+        );
+      },
       { preconnect: originalFetch.preconnect }
     ) satisfies typeof fetch;
 
