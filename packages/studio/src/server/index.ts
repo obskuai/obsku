@@ -6,10 +6,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { loadStudioConfig } from "../scanner/config-loader.js";
 import { Registry } from "../scanner/registry.js";
 import { eventBridge as defaultEventBridge } from "./event-bridge.js";
 import type { EventRecorder } from "./executable-agent-registry.js";
 import { RegistryBackedExecutableAgentRegistry } from "./executable-agent-registry.js";
+import { resolveProvider } from "./provider-adapter.js";
 import type { RegistryReader } from "./routes/agents.js";
 import { createAgentsRoute } from "./routes/agents.js";
 import { type ChatAgentRegistry, createChatRoute, type ExecutableAgent } from "./routes/chat.js";
@@ -74,15 +76,30 @@ export function createApp(options: StudioAppOptions = {}): Hono {
     : undefined;
   let sharedRegistry = registry;
   let resolvedChatRegistry = agentRegistry;
+  let resolvedChatRegistryPromise: Promise<ChatAgentRegistry | undefined> | undefined;
+  let providerResolutionPromise: Promise<ReturnType<typeof resolveProvider>> | undefined;
 
   const getSharedRegistry = (): RegistryReader => {
     sharedRegistry ??= new Registry({ rootDir });
     return sharedRegistry;
   };
 
-  const getResolvedChatRegistry = (): ChatAgentRegistry | undefined => {
+  const getProviderResolution = async (): Promise<ReturnType<typeof resolveProvider>> => {
+    providerResolutionPromise ??= (async () => {
+      const configResult = await loadStudioConfig(rootDir);
+      return resolveProvider(configResult?.config ?? {}, []);
+    })();
+
+    return providerResolutionPromise;
+  };
+
+  const getResolvedChatRegistry = async (): Promise<ChatAgentRegistry | undefined> => {
     if (resolvedChatRegistry) {
       return resolvedChatRegistry;
+    }
+
+    if (resolvedChatRegistryPromise) {
+      return resolvedChatRegistryPromise;
     }
 
     const currentRegistry = getSharedRegistry();
@@ -90,11 +107,17 @@ export function createApp(options: StudioAppOptions = {}): Hono {
       return undefined;
     }
 
-    resolvedChatRegistry = new RegistryBackedExecutableAgentRegistry(
-      currentRegistry,
-      sharedEventRecorder
-    );
-    return resolvedChatRegistry;
+    resolvedChatRegistryPromise = (async () => {
+      const providerResolution = await getProviderResolution();
+      resolvedChatRegistry = new RegistryBackedExecutableAgentRegistry(
+        currentRegistry,
+        providerResolution,
+        sharedEventRecorder
+      );
+      return resolvedChatRegistry;
+    })();
+
+    return resolvedChatRegistryPromise;
   };
   const frontendDistDir = getFrontendDistDir();
   const frontendIndexHtml = readFileSync(resolve(frontendDistDir, "index.html"), "utf8");
@@ -168,22 +191,25 @@ export function createApp(options: StudioAppOptions = {}): Hono {
     createChatRoute({
       agentRegistry: {
         getExecutable(agentName: string) {
-          const currentRegistry = getResolvedChatRegistry();
-          if (!currentRegistry) {
-            return undefined;
-          }
+          return (async () => {
+            const currentRegistry = await getResolvedChatRegistry();
+            if (!currentRegistry) {
+              return undefined;
+            }
 
-          if (currentRegistry instanceof Map) {
-            return currentRegistry.get(agentName);
-          }
+            if (currentRegistry instanceof Map) {
+              return currentRegistry.get(agentName);
+            }
 
-          if (
-            "getExecutable" in currentRegistry &&
-            typeof currentRegistry.getExecutable === "function"
-          ) {
-            return currentRegistry.getExecutable(agentName);
-          }
-          return (currentRegistry as Record<string, ExecutableAgent>)[agentName];
+            if (
+              "getExecutable" in currentRegistry &&
+              typeof currentRegistry.getExecutable === "function"
+            ) {
+              return currentRegistry.getExecutable(agentName);
+            }
+
+            return (currentRegistry as Record<string, ExecutableAgent>)[agentName];
+          })();
         },
       },
     })

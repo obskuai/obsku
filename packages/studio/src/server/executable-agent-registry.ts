@@ -7,34 +7,25 @@ import {
   type LLMProvider,
 } from "@obsku/framework";
 import { Registry } from "../scanner/registry.js";
+import type { ProviderResolution } from "./provider-adapter.js";
 import type {
   ExecutableAgent,
   ExecutableAgentRegistry,
   ExecutableAgentRunOptions,
 } from "./routes/chat.js";
 
-const DEFAULT_MODEL =
-  process.env.STUDIO_MODEL ?? process.env.OBSKU_STUDIO_MODEL ?? "amazon.nova-lite-v1:0";
-const DEFAULT_REGION = process.env.STUDIO_AWS_REGION ?? process.env.AWS_REGION ?? "us-east-1";
-const DEFAULT_MAX_OUTPUT_TOKENS = Number.parseInt(
-  process.env.STUDIO_MAX_OUTPUT_TOKENS ?? "1024",
-  10
-);
-const DEFAULT_CONTEXT_WINDOW_SIZE = Number.parseInt(
-  process.env.STUDIO_CONTEXT_WINDOW_SIZE ?? "300000",
-  10
-);
-const BEDROCK_MODULE = "@obsku/provider-bedrock";
+const DEFAULT_MODEL = process.env.STUDIO_MODEL ?? process.env.OBSKU_STUDIO_MODEL;
 
 export interface EventRecorder {
   recordEvent(event: AgentEvent | DefaultPublicPayload<AgentEvent>): Promise<void>;
 }
 
 export class RegistryBackedExecutableAgentRegistry implements ExecutableAgentRegistry {
-  private providerPromise?: Promise<LLMProvider>;
+  private readonly providerPromises = new Map<string, Promise<LLMProvider>>();
 
   constructor(
     private readonly registry: Registry,
+    private readonly providerResolution: ProviderResolution,
     private readonly eventRecorder?: EventRecorder
   ) {}
 
@@ -46,9 +37,14 @@ export class RegistryBackedExecutableAgentRegistry implements ExecutableAgentReg
 
     return {
       run: async (input: string, options?: ExecutableAgentRunOptions) => {
-        const provider = await this.getProvider();
+        const runtimeModel = this.getRuntimeModel();
+        const provider = await this.getProvider(runtimeModel);
         const onEvent = (event: DefaultPublicPayload<AgentEvent>) => {
-          const decoratedEvent = withRuntimeModel(event);
+          const decoratedEvent = withRuntimeModel(
+            event,
+            runtimeModel,
+            this.providerResolution.provider.id
+          );
 
           if (options?.onEvent) {
             options.onEvent(decoratedEvent);
@@ -74,21 +70,22 @@ export class RegistryBackedExecutableAgentRegistry implements ExecutableAgentReg
     };
   }
 
-  private getProvider(): Promise<LLMProvider> {
-    if (!this.providerPromise) {
-      this.providerPromise = loadBedrockProvider({
-        contextWindowSize: Number.isFinite(DEFAULT_CONTEXT_WINDOW_SIZE)
-          ? DEFAULT_CONTEXT_WINDOW_SIZE
-          : 300000,
-        maxOutputTokens: Number.isFinite(DEFAULT_MAX_OUTPUT_TOKENS)
-          ? DEFAULT_MAX_OUTPUT_TOKENS
-          : 1024,
-        model: DEFAULT_MODEL,
-        region: DEFAULT_REGION,
-      });
+  private getProvider(model: string): Promise<LLMProvider> {
+    const providerId = this.providerResolution.provider.id;
+    const cacheKey = `${providerId}:${model}`;
+
+    const cached = this.providerPromises.get(cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    return this.providerPromise;
+    const providerPromise = this.providerResolution.provider.createProvider(model);
+    this.providerPromises.set(cacheKey, providerPromise);
+    return providerPromise;
+  }
+
+  private getRuntimeModel(): string {
+    return DEFAULT_MODEL ?? this.providerResolution.provider.getDefaultModel();
   }
 }
 
@@ -97,7 +94,9 @@ function isAgentDef(value: Agent | AgentDef): value is AgentDef {
 }
 
 function withRuntimeModel(
-  event: DefaultPublicPayload<AgentEvent>
+  event: DefaultPublicPayload<AgentEvent>,
+  runtimeModel: string,
+  runtimeProvider: ProviderResolution["provider"]["id"]
 ): DefaultPublicPayload<AgentEvent> {
   const data =
     "data" in event && typeof event.data === "object" && event.data !== null ? event.data : {};
@@ -106,20 +105,8 @@ function withRuntimeModel(
     ...event,
     data: {
       ...data,
-      runtimeModel: DEFAULT_MODEL,
+      runtimeModel,
+      runtimeProvider,
     },
   } as unknown as DefaultPublicPayload<AgentEvent>;
-}
-
-async function loadBedrockProvider(config: {
-  contextWindowSize: number;
-  maxOutputTokens: number;
-  model: string;
-  region: string;
-}): Promise<LLMProvider> {
-  const { bedrock } = (await import(BEDROCK_MODULE)) as {
-    bedrock(options: typeof config): Promise<LLMProvider>;
-  };
-
-  return bedrock(config);
 }
