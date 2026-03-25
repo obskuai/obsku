@@ -29,25 +29,16 @@ export interface ToolDisplayInfo {
  * Excludes internal fields like agentFactory, beforeLLMCall, etc.
  */
 export interface AgentDisplayInfo {
-  /** Agent name */
   name: string;
-  /** Preview of the prompt (truncated) */
+  runtimeModel?: string;
   promptPreview: string;
-  /** List of available tools */
   tools: ToolDisplayInfo[];
-  /** Memory configuration */
   memory?: MemoryDisplayInfo;
-  /** Number of input guardrails */
   guardrailsCount: { input: number; output: number };
-  /** Number of handoff targets */
   handoffsCount: number;
-  /** Maximum iterations */
   maxIterations: number;
-  /** Whether streaming is enabled */
   streaming: boolean;
-  /** Tool timeout in ms */
   toolTimeout: number;
-  /** Tool concurrency limit */
   toolConcurrency: number;
 }
 
@@ -120,6 +111,7 @@ export interface SessionDisplayInfo {
   title: string;
   /** Creation timestamp */
   createdAt: number;
+  runtimeModel?: string;
   /** Current status */
   status: SessionDisplayStatus;
   /** Number of messages in session */
@@ -136,18 +128,18 @@ export interface SessionDisplayInfo {
  * Event display category for UI grouping
  */
 export type EventDisplayCategory =
-  | "session"      // Session lifecycle events
-  | "agent"        // Agent lifecycle events
-  | "tool"         // Tool execution events
-  | "graph"        // Graph execution events
-  | "background"   // Background task events
-  | "checkpoint"   // Checkpoint/memory events
-  | "guardrail"    // Guardrail events
-  | "handoff"      // Handoff events
-  | "supervisor"   // Supervisor events
-  | "context"      // Context management events
-  | "error"        // Error events
-  | "stream";      // Stream events
+  | "session" // Session lifecycle events
+  | "agent" // Agent lifecycle events
+  | "tool" // Tool execution events
+  | "graph" // Graph execution events
+  | "background" // Background task events
+  | "checkpoint" // Checkpoint/memory events
+  | "guardrail" // Guardrail events
+  | "handoff" // Handoff events
+  | "supervisor" // Supervisor events
+  | "context" // Context management events
+  | "error" // Error events
+  | "stream"; // Stream events
 
 /**
  * Event severity level for UI styling

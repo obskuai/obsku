@@ -10,7 +10,7 @@ describe("graph detail page", () => {
 
   it("wires GraphDetail into the frontend app", () => {
     expect(appContent).toContain('import GraphDetail from "./pages/GraphDetail"');
-    expect(appContent).toContain("return <GraphDetail />");
+    expect(appContent).toContain("<GraphDetail />");
   });
 
   it("uses React Flow read-only canvas patterns", () => {
@@ -32,12 +32,9 @@ describe("graph detail page", () => {
     expect(graphDetailContent).toContain("executionOrder");
   });
 
-  it("defines mock graph data with edge conditions and back-edge styling", () => {
-    expect(graphDetailContent).toContain("export const mockGraphNodes");
-    expect(graphDetailContent).toContain("export const mockGraphEdges");
-    expect(graphDetailContent).toContain('condition: "needs policy check"');
-    expect(graphDetailContent).toContain('condition: "retry with narrowed scope"');
-    expect(graphDetailContent).toContain("isBackEdge: true");
+  it("styles back-edges differently from regular edges", () => {
+    expect(graphDetailContent).toContain("isBackEdge");
     expect(graphDetailContent).toContain('strokeDasharray: "8 6"');
+    expect(graphDetailContent).toContain("getBezierPath");
   });
 });

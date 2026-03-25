@@ -77,6 +77,83 @@ const addTool: InternalPlugin = {
   },
 };
 
+export const graphParallelSplitDefinition = {
+  maxIterations: 2,
+  name: "graph-parallel-split",
+  prompt:
+    "You are the planner node. Convert the user request into a concise plan that assigns exactly one computation to worker-a, worker-b, and worker-c. Mention the numeric operations explicitly.",
+};
+
+export const graphParallelWorkerADefinition = {
+  maxIterations: 2,
+  name: "graph-parallel-worker-a",
+  prompt:
+    "You are worker-a. Use the multiply tool exactly once for 3 and 4. Then answer exactly in the form 'worker-a result: multiply 3*4 = 12'.",
+  tools: [multiplyTool],
+};
+
+export const graphParallelWorkerBDefinition = {
+  maxIterations: 2,
+  name: "graph-parallel-worker-b",
+  prompt:
+    "You are worker-b. Use the subtract tool exactly once for 10 and 3. Then answer exactly in the form 'worker-b result: subtract 10-3 = 7'.",
+  tools: [subtractTool],
+};
+
+export const graphParallelWorkerCDefinition = {
+  maxIterations: 2,
+  name: "graph-parallel-worker-c",
+  prompt:
+    "You are worker-c. Use the add tool exactly once for 5 and 6. Then answer exactly in the form 'worker-c result: add 5+6 = 11'.",
+  tools: [addTool],
+};
+
+export const graphParallelMergeDefinition = {
+  maxIterations: 2,
+  name: "graph-parallel-merge",
+  prompt:
+    "You are the merge node. Combine all worker outputs into a concise summary. Include worker-a, worker-b, and worker-c by name, preserve each computed value, and end with a short final summary sentence.",
+};
+
+export const graphParallelBenchmarkDefinition = {
+  edges: [
+    { from: "split", to: "worker-a" },
+    { from: "split", to: "worker-b" },
+    { from: "split", to: "worker-c" },
+    { from: "worker-a", to: "merge" },
+    { from: "worker-b", to: "merge" },
+    { from: "worker-c", to: "merge" },
+  ],
+  entry: "split",
+  nodes: [
+    {
+      description: "Planner node that fans out deterministic math tasks.",
+      executor: graphParallelSplitDefinition,
+      id: "split",
+    },
+    {
+      description: "Worker that computes multiplication.",
+      executor: graphParallelWorkerADefinition,
+      id: "worker-a",
+    },
+    {
+      description: "Worker that computes subtraction.",
+      executor: graphParallelWorkerBDefinition,
+      id: "worker-b",
+    },
+    {
+      description: "Worker that computes addition.",
+      executor: graphParallelWorkerCDefinition,
+      id: "worker-c",
+    },
+    {
+      description: "Merge node that summarizes worker outputs.",
+      executor: graphParallelMergeDefinition,
+      id: "merge",
+    },
+  ],
+};
+
 function node(id: string, executor: GraphNode["executor"]): GraphNode {
   return { executor, id };
 }
@@ -236,43 +313,11 @@ export const graphParallelScenario: Scenario<BenchmarkContext> = {
     const checkpointStore = ctx.checkpointStore as CheckpointBackend;
     const streamSubject = createEventSubscribable();
 
-    const splitAgent = agent({
-      maxIterations: 2,
-      name: "graph-parallel-split",
-      prompt:
-        "You are the planner node. Convert the user request into a concise plan that assigns exactly one computation to worker-a, worker-b, and worker-c. Mention the numeric operations explicitly.",
-    });
-
-    const workerAAgent = agent({
-      maxIterations: 2,
-      name: "graph-parallel-worker-a",
-      prompt:
-        "You are worker-a. Use the multiply tool exactly once for 3 and 4. Then answer exactly in the form 'worker-a result: multiply 3*4 = 12'.",
-      tools: [multiplyTool],
-    });
-
-    const workerBAgent = agent({
-      maxIterations: 2,
-      name: "graph-parallel-worker-b",
-      prompt:
-        "You are worker-b. Use the subtract tool exactly once for 10 and 3. Then answer exactly in the form 'worker-b result: subtract 10-3 = 7'.",
-      tools: [subtractTool],
-    });
-
-    const workerCAgent = agent({
-      maxIterations: 2,
-      name: "graph-parallel-worker-c",
-      prompt:
-        "You are worker-c. Use the add tool exactly once for 5 and 6. Then answer exactly in the form 'worker-c result: add 5+6 = 11'.",
-      tools: [addTool],
-    });
-
-    const mergeAgent = agent({
-      maxIterations: 2,
-      name: "graph-parallel-merge",
-      prompt:
-        "You are the merge node. Combine all worker outputs into a concise summary. Include worker-a, worker-b, and worker-c by name, preserve each computed value, and end with a short final summary sentence.",
-    });
+    const splitAgent = agent(graphParallelSplitDefinition);
+    const workerAAgent = agent(graphParallelWorkerADefinition);
+    const workerBAgent = agent(graphParallelWorkerBDefinition);
+    const workerCAgent = agent(graphParallelWorkerCDefinition);
+    const mergeAgent = agent(graphParallelMergeDefinition);
 
     const emitEvent = (event: unknown) => {
       streamSubject.emit(event);

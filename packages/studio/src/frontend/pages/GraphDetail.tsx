@@ -23,11 +23,14 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import { Bot, FunctionSquare, GitBranch, Play, Workflow } from "lucide-react";
-import type { ComponentType, CSSProperties } from "react";
+import { type ComponentType, type CSSProperties, useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { ApiError, getGraph } from "../lib/api";
+import { cn } from "../lib/utils";
 
 type GraphNodeKind = "agent" | "graph" | "function";
 
@@ -82,129 +85,71 @@ const nodeTone: Record<
   },
 };
 
-export const mockGraphNodes: GraphNode[] = [
-  {
-    id: "graph-entry",
-    type: "graph-node",
-    position: { x: 40, y: 140 },
-    data: {
-      title: "Support Graph",
-      subtitle: "Root graph",
-      kind: "graph",
-      executionOrder: 1,
-      isEntry: true,
-      detail: "Routes incoming requests and sets shared execution context.",
-    },
-  },
-  {
-    id: "agent-router",
-    type: "graph-node",
-    position: { x: 360, y: 40 },
-    data: {
-      title: "Intent Router",
-      subtitle: "triage.agent",
-      kind: "agent",
-      executionOrder: 2,
-      detail: "Chooses the next path from issue type, urgency, and user history.",
-    },
-  },
-  {
-    id: "function-guard",
-    type: "graph-node",
-    position: { x: 360, y: 260 },
-    data: {
-      title: "Policy Guard",
-      subtitle: "guardPolicy()",
-      kind: "function",
-      executionOrder: 3,
-      detail: "Evaluates escalation and compliance checks before response generation.",
-    },
-  },
-  {
-    id: "agent-responder",
-    type: "graph-node",
-    position: { x: 700, y: 80 },
-    data: {
-      title: "Response Agent",
-      subtitle: "answer.agent",
-      kind: "agent",
-      executionOrder: 4,
-      detail: "Drafts the final response using retrieved facts and current guard state.",
-    },
-  },
-  {
-    id: "function-fallback",
-    type: "graph-node",
-    position: { x: 700, y: 300 },
-    data: {
-      title: "Fallback Tool",
-      subtitle: "recoverAnswer()",
-      kind: "function",
-      executionOrder: 5,
-      detail: "Builds a conservative answer when routing confidence drops below threshold.",
-    },
-  },
-];
-
-export const mockGraphEdges: GraphEdge[] = [
-  {
-    id: "edge-entry-router",
-    type: "graph-edge",
-    source: "graph-entry",
-    target: "agent-router",
-    data: { condition: "start", isExecutionPath: true },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#0f172a" },
-  },
-  {
-    id: "edge-router-guard",
-    type: "graph-edge",
-    source: "agent-router",
-    target: "function-guard",
-    data: { condition: "needs policy check", isExecutionPath: true },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#0f172a" },
-  },
-  {
-    id: "edge-router-responder",
-    type: "graph-edge",
-    source: "agent-router",
-    target: "agent-responder",
-    data: { condition: "direct answer", isExecutionPath: true },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#0f172a" },
-  },
-  {
-    id: "edge-guard-responder",
-    type: "graph-edge",
-    source: "function-guard",
-    target: "agent-responder",
-    data: { condition: "approved", isExecutionPath: true },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#0f172a" },
-  },
-  {
-    id: "edge-guard-fallback",
-    type: "graph-edge",
-    source: "function-guard",
-    target: "function-fallback",
-    data: { condition: "confidence < 0.6" },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#0f172a" },
-  },
-  {
-    id: "edge-fallback-router",
-    type: "graph-edge",
-    source: "function-fallback",
-    target: "agent-router",
-    data: { condition: "retry with narrowed scope", isBackEdge: true },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#64748b" },
-  },
-];
-
 export const graphViewport: ReactFlowProps["defaultViewport"] = {
   x: 0,
   y: 0,
   zoom: 0.85,
 };
 
-export function isExecutionNode(node: GraphNode): boolean {
-  return typeof node.data.executionOrder === "number";
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 404) {
+      return "Graph not found.";
+    }
+
+    return error.message;
+  }
+
+  return "Could not load graph details.";
+}
+
+function toGraphNodeKind(value: "agent" | "graph" | "fn"): GraphNodeKind {
+  return value === "fn" ? "function" : value;
+}
+
+function buildGraphNodes(graph: Awaited<ReturnType<typeof getGraph>>["graph"]): GraphNode[] {
+  const ids = graph.executionOrder.length > 0 ? graph.executionOrder : Object.keys(graph.nodes);
+  const gapX = 320;
+  const gapY = 180;
+
+  return ids.map((id, index) => {
+    const node = graph.nodes[id];
+    const column = index % 3;
+    const row = Math.floor(index / 3);
+
+    return {
+      id,
+      type: "graph-node",
+      position: { x: 40 + column * gapX, y: 60 + row * gapY },
+      data: {
+        title: node.id,
+        subtitle: node.status ?? `${node.type} node`,
+        kind: toGraphNodeKind(node.type),
+        executionOrder:
+          graph.executionOrder.indexOf(id) >= 0 ? graph.executionOrder.indexOf(id) + 1 : undefined,
+        isEntry: graph.entry === id,
+        detail: node.description ?? "No description provided.",
+      },
+    };
+  });
+}
+
+function buildGraphEdges(graph: Awaited<ReturnType<typeof getGraph>>["graph"]): GraphEdge[] {
+  return [...graph.edges, ...graph.backEdges].map((edge, index) => ({
+    id: `${edge.from}-${edge.to}-${index}`,
+    type: "graph-edge",
+    source: edge.from,
+    target: edge.to,
+    data: {
+      condition: edge.back ? "loopback" : `path ${index + 1}`,
+      isBackEdge: edge.back ?? false,
+      isExecutionPath: !(edge.back ?? false),
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: edge.back ? "#64748b" : "#0f172a",
+    },
+  }));
 }
 
 function GraphNodeCard({ data }: NodeProps<GraphNode>) {
@@ -339,8 +284,61 @@ export function graphMiniMapNodeColor(node: GraphNode) {
 }
 
 function GraphDetail() {
-  const [nodes, , onNodesChange] = useNodesState<GraphNode>(mockGraphNodes);
-  const [edges, , onEdgesChange] = useEdgesState<GraphEdge>(mockGraphEdges);
+  const { id } = useParams<{ id: string }>();
+  const [graph, setGraph] = useState<Awaited<ReturnType<typeof getGraph>>["graph"] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setError("Graph not found.");
+      setIsLoading(false);
+      return;
+    }
+
+    const graphId = id;
+    let isMounted = true;
+
+    async function loadGraph() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await getGraph(graphId);
+        if (isMounted) {
+          setGraph(response.graph);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setGraph(null);
+          setError(getErrorMessage(loadError));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadGraph();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const graphNodes = useMemo(() => (graph ? buildGraphNodes(graph) : []), [graph]);
+  const graphEdges = useMemo(() => (graph ? buildGraphEdges(graph) : []), [graph]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<GraphNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<GraphEdge>([]);
+
+  useEffect(() => {
+    setNodes(graphNodes);
+  }, [graphNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(graphEdges);
+  }, [graphEdges, setEdges]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_24%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-6 py-8 text-slate-950">
@@ -351,14 +349,15 @@ function GraphDetail() {
               Graph visualization
             </Badge>
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Execution graph detail</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">
+                {graph ? `Graph ${id}` : "Execution graph detail"}
+              </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                Read-only React Flow canvas for agent orchestration, branching conditions,
-                back-edges, and execution order.
+                Live graph data from the Studio API with branching, loopbacks, and execution order.
               </p>
             </div>
           </div>
-          <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-2 text-xs text-slate-600 sm:grid-cols-3">
             <Badge
               variant="outline"
               className="justify-center border-sky-300 bg-sky-50 text-sky-800"
@@ -380,86 +379,95 @@ function GraphDetail() {
           </div>
         </div>
 
-        <Card className="overflow-hidden border-slate-200/80 bg-white/80 shadow-2xl shadow-slate-200/70 backdrop-blur-sm">
-          <CardContent className="grid gap-0 p-0 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="h-[720px] min-h-[65vh] border-b border-slate-200/80 lg:border-r lg:border-b-0">
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={graphNodeTypes}
-                edgeTypes={graphEdgeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                fitView
-                fitViewOptions={{ padding: 0.2 }}
-                defaultViewport={graphViewport}
-                minZoom={0.4}
-                maxZoom={1.5}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable
-                proOptions={{ hideAttribution: true }}
-                aria-label="Execution graph"
-              >
-                <Background
-                  gap={24}
-                  size={1}
-                  color="rgba(148, 163, 184, 0.35)"
-                  variant={BackgroundVariant.Dots}
-                />
-                <MiniMap
-                  pannable
-                  zoomable
-                  nodeColor={graphMiniMapNodeColor}
-                  className="!border !border-slate-200 !bg-white/95"
-                />
-                <Controls className="!shadow-lg" showInteractive={false} />
-              </ReactFlow>
-            </div>
-
-            <div className="space-y-5 p-5">
-              <div>
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                  <GitBranch className="h-4 w-4 text-slate-500" />
-                  Flow legend
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Solid edges mark the primary execution path. Dashed edges show retry or loopback
-                  behavior. Labels capture branch conditions directly on the canvas.
-                </p>
+        {isLoading ? (
+          <Card className="border-slate-200/80 bg-white/80 shadow-2xl shadow-slate-200/70 backdrop-blur-sm">
+            <CardContent className="py-16 text-center text-muted-foreground">
+              Loading graph...
+            </CardContent>
+          </Card>
+        ) : error || !graph ? (
+          <Card className="border-slate-200/80 bg-white/80 shadow-2xl shadow-slate-200/70 backdrop-blur-sm">
+            <CardContent className="space-y-4 py-16 text-center text-muted-foreground">
+              <div>{error ?? "Graph not found."}</div>
+              <Button variant="outline" asChild>
+                <Link to="/graphs">Back to graphs</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden border-slate-200/80 bg-white/80 shadow-2xl shadow-slate-200/70 backdrop-blur-sm">
+            <CardContent className="grid gap-0 p-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="h-[720px] min-h-[65vh] border-b border-slate-200/80 lg:border-b-0 lg:border-r">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={graphNodeTypes}
+                  edgeTypes={graphEdgeTypes}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  fitView
+                  fitViewOptions={{ padding: 0.2 }}
+                  defaultViewport={graphViewport}
+                  minZoom={0.4}
+                  maxZoom={1.5}
+                  nodesDraggable={false}
+                  nodesConnectable={false}
+                  elementsSelectable
+                  proOptions={{ hideAttribution: true }}
+                  aria-label="Execution graph"
+                >
+                  <Background
+                    gap={24}
+                    size={1}
+                    color="rgba(148, 163, 184, 0.35)"
+                    variant={BackgroundVariant.Dots}
+                  />
+                  <MiniMap
+                    pannable
+                    zoomable
+                    nodeColor={graphMiniMapNodeColor}
+                    className="!border !border-slate-200 !bg-white/95"
+                  />
+                  <Controls className="!shadow-lg" showInteractive={false} />
+                </ReactFlow>
               </div>
 
-              <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Execution order
-                  </div>
-                  <div className="mt-2 text-sm text-slate-700">
-                    Numbered markers highlight the expected traversal sequence for the current mock
-                    graph.
-                  </div>
+              <div className="space-y-5 p-5">
+                <div>
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <GitBranch className="h-4 w-4 text-slate-500" />
+                    Flow summary
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Primary edges are solid, loopbacks are dashed, and node badges reflect the live
+                    graph structure returned by the backend.
+                  </p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Entry marker
+
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Node count
+                    </div>
+                    <div className="mt-2 text-sm text-slate-700">{graphNodes.length} nodes</div>
                   </div>
-                  <div className="mt-2 text-sm text-slate-700">
-                    The root graph carries a play marker so the starting node reads instantly.
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Edge count
+                    </div>
+                    <div className="mt-2 text-sm text-slate-700">{graphEdges.length} edges</div>
                   </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Read-only v1
-                  </div>
-                  <div className="mt-2 text-sm text-slate-700">
-                    Pan, zoom, and fit-view are enabled. Node editing and new connections stay
-                    disabled.
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Entry node
+                    </div>
+                    <div className="mt-2 text-sm text-slate-700">{graph.entry}</div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

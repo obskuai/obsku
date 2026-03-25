@@ -57,6 +57,7 @@ export const ChatMessageSchema = z.object({
 
 export const AgentDisplaySchema = z.object({
   name: z.string(),
+  runtimeModel: z.string().optional(),
   promptPreview: z.string(),
   tools: z.array(ToolDisplaySchema),
   memory: MemoryDisplaySchema.optional(),
@@ -123,6 +124,7 @@ export const SessionDisplaySchema = z.object({
   id: z.string(),
   title: z.string(),
   createdAt: z.number(),
+  runtimeModel: z.string().optional(),
   status: z.enum(["active", "completed", "failed", "interrupted"]),
   messageCount: z.number(),
   updatedAt: z.number().optional(),

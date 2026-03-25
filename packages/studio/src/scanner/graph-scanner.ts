@@ -48,16 +48,36 @@ export function scanGraphs(options: ScanOptions): GraphScanResult[] {
 
 function matchGraphObject(expression: Expression): ObjectLiteralExpression | undefined {
   const unwrapped = unwrapExpression(expression);
-  if (!Node.isCallExpression(unwrapped) || !isGraphFactoryCall(unwrapped)) {
-    return undefined;
+
+  if (Node.isCallExpression(unwrapped) && isGraphFactoryCall(unwrapped)) {
+    const firstArgument = unwrapped.getArguments()[0];
+    return firstArgument && Node.isObjectLiteralExpression(firstArgument)
+      ? firstArgument
+      : undefined;
   }
 
-  const firstArgument = unwrapped.getArguments()[0];
-  return firstArgument && Node.isObjectLiteralExpression(firstArgument) ? firstArgument : undefined;
+  if (looksLikeGraphDef(unwrapped)) {
+    return getObjectLiteral(unwrapped);
+  }
+
+  return undefined;
 }
 
 function isGraphFactoryCall(expression: CallExpression): boolean {
   return expression.getExpression().getText() === "graph";
+}
+
+function looksLikeGraphDef(expression: Expression): boolean {
+  const objectLiteral = getObjectLiteral(expression);
+  if (!objectLiteral) {
+    return false;
+  }
+
+  return Boolean(
+    getPropertyValue(objectLiteral, "entry") &&
+      getPropertyValue(objectLiteral, "nodes") &&
+      getPropertyValue(objectLiteral, "edges")
+  );
 }
 
 function extractGraphMetadata(objectLiteral: ObjectLiteralExpression): GraphDisplayInfo {

@@ -1,11 +1,18 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { Registry } from "../scanner/registry.js";
+import { eventBridge as defaultEventBridge } from "./event-bridge.js";
+import type { EventRecorder } from "./executable-agent-registry.js";
+import { RegistryBackedExecutableAgentRegistry } from "./executable-agent-registry.js";
 import type { RegistryReader } from "./routes/agents.js";
 import { createAgentsRoute } from "./routes/agents.js";
-import { type ChatAgentRegistry, createChatRoute } from "./routes/chat.js";
+import { type ChatAgentRegistry, createChatRoute, type ExecutableAgent } from "./routes/chat.js";
 import { createEventsRoute, type EventBridgeSubscriber } from "./routes/events.js";
 import { createSessionsRoute, type SessionEventStore } from "./routes/sessions.js";
 
@@ -29,6 +36,28 @@ export interface StudioApp {
   hostname: string;
 }
 
+function isEventRecorder(value: SessionEventStore): value is SessionEventStore & EventRecorder {
+  return typeof (value as { recordEvent?: unknown }).recordEvent === "function";
+}
+
+function getFrontendDistDir(): string {
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    resolve(moduleDir, "..", "..", "dist", "frontend"),
+    resolve(moduleDir, "..", "frontend", "dist", "frontend"),
+    resolve(moduleDir, "frontend"),
+    resolve(moduleDir, "..", "frontend"),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return candidates[0]!;
+}
+
 export function createApp(options: StudioAppOptions = {}): Hono {
   const {
     enableLogging = true,
@@ -39,6 +68,36 @@ export function createApp(options: StudioAppOptions = {}): Hono {
     sessionsEventBridge,
     agentRegistry,
   } = options;
+  const sharedSessionsBridge = sessionsEventBridge ?? defaultEventBridge;
+  const sharedEventRecorder = isEventRecorder(sharedSessionsBridge)
+    ? sharedSessionsBridge
+    : undefined;
+  let sharedRegistry = registry;
+  let resolvedChatRegistry = agentRegistry;
+
+  const getSharedRegistry = (): RegistryReader => {
+    sharedRegistry ??= new Registry({ rootDir });
+    return sharedRegistry;
+  };
+
+  const getResolvedChatRegistry = (): ChatAgentRegistry | undefined => {
+    if (resolvedChatRegistry) {
+      return resolvedChatRegistry;
+    }
+
+    const currentRegistry = getSharedRegistry();
+    if (!(currentRegistry instanceof Registry)) {
+      return undefined;
+    }
+
+    resolvedChatRegistry = new RegistryBackedExecutableAgentRegistry(
+      currentRegistry,
+      sharedEventRecorder
+    );
+    return resolvedChatRegistry;
+  };
+  const frontendDistDir = getFrontendDistDir();
+  const frontendIndexHtml = readFileSync(resolve(frontendDistDir, "index.html"), "utf8");
 
   const app = new Hono();
 
@@ -71,7 +130,20 @@ export function createApp(options: StudioAppOptions = {}): Hono {
   app.route(
     "/api",
     createAgentsRoute({
-      registry,
+      registry: {
+        getAgent(name: string) {
+          return getSharedRegistry().getAgent(name);
+        },
+        getAgents() {
+          return getSharedRegistry().getAgents();
+        },
+        getGraph(id: string) {
+          return getSharedRegistry().getGraph(id);
+        },
+        getGraphs() {
+          return getSharedRegistry().getGraphs();
+        },
+      },
       rootDir,
     })
   );
@@ -87,14 +159,33 @@ export function createApp(options: StudioAppOptions = {}): Hono {
   app.route(
     "/api",
     createSessionsRoute({
-      eventBridge: sessionsEventBridge,
+      eventBridge: sharedSessionsBridge,
     })
   );
 
   app.route(
     "/api",
     createChatRoute({
-      agentRegistry,
+      agentRegistry: {
+        getExecutable(agentName: string) {
+          const currentRegistry = getResolvedChatRegistry();
+          if (!currentRegistry) {
+            return undefined;
+          }
+
+          if (currentRegistry instanceof Map) {
+            return currentRegistry.get(agentName);
+          }
+
+          if (
+            "getExecutable" in currentRegistry &&
+            typeof currentRegistry.getExecutable === "function"
+          ) {
+            return currentRegistry.getExecutable(agentName);
+          }
+          return (currentRegistry as Record<string, ExecutableAgent>)[agentName];
+        },
+      },
     })
   );
 
@@ -111,9 +202,15 @@ export function createApp(options: StudioAppOptions = {}): Hono {
     return c.text("Not Found", 404);
   });
 
-  app.get("/", serveStatic({ path: "./dist/frontend/index.html" }));
-  app.use("/*", serveStatic({ root: "./dist/frontend" }));
-  app.get("/*", serveStatic({ path: "./dist/frontend/index.html" }));
+  app.use("/*", serveStatic({ root: frontendDistDir }));
+  app.get("/", (c) => c.html(frontendIndexHtml));
+  app.get("/*", (c) => {
+    if (c.req.path.startsWith("/api/")) {
+      return c.notFound();
+    }
+
+    return c.html(frontendIndexHtml);
+  });
 
   app.onError((err, c) => {
     console.error("[Studio Server Error]", err);

@@ -1,26 +1,25 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
-import { resolve } from 'path';
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { resolve } from "path";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   root: resolve(__dirname),
-  build: {
-    lib: {
-      entry: resolve(__dirname, 'main.tsx'),
-      name: 'StudioFrontend',
-      fileName: 'studio-frontend',
-      formats: ['es'],
+  resolve: {
+    alias: {
+      "@": resolve(__dirname),
     },
-    outDir: resolve(__dirname, '../../../dist/frontend'),
+  },
+  build: {
+    outDir: resolve(__dirname, "../../dist/frontend"),
     emptyOutDir: true,
   },
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },

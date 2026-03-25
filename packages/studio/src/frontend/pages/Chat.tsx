@@ -10,15 +10,13 @@ import {
 } from "@assistant-ui/react";
 import { Bot, MessageSquare, SendHorizonal } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { ApiError, getAgent, listAgents, postChat } from "../lib/api";
+import { cn } from "../lib/utils";
 
-export const CHAT_AGENTS = [
-  { label: "Customer Support Bot", value: "customer-support-bot" },
-  { label: "Code Reviewer", value: "code-reviewer" },
-  { label: "Data Analyst", value: "data-analyst" },
-] as const;
+export const CHAT_AGENTS = [] as const;
 
 export interface ParsedSseEvent {
   event: string;
@@ -151,18 +149,14 @@ export function createChatModelAdapter(options: {
         return;
       }
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await postChat(
+        {
           message: prompt,
           agentName: options.agentName,
           sessionId: options.sessionId,
-        }),
-        signal: abortSignal,
-      });
+        },
+        abortSignal
+      );
 
       yield* streamChatResponse(response, options.onSessionId);
     },
@@ -268,15 +262,96 @@ function ChatBubble({ children, role }: { children: ReactNode; role: ThreadMessa
 }
 
 export default function Chat() {
-  const [selectedAgent, setSelectedAgent] = useState<string>(CHAT_AGENTS[0].value);
+  const [searchParams] = useSearchParams();
+  const [agents, setAgents] = useState<Array<{ label: string; value: string }>>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>(searchParams.get("agent") ?? "");
+  const [runtimeModel, setRuntimeModel] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [agentError, setAgentError] = useState<string | null>(null);
 
   const handleAgentChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setSelectedAgent((event.target as unknown as { value: string }).value);
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadAgents() {
+      setIsLoadingAgents(true);
+      setAgentError(null);
+
+      try {
+        const response = await listAgents();
+        if (!isMounted) {
+          return;
+        }
+
+        const nextAgents = response.agents.map((agent) => ({
+          label: agent.name,
+          value: agent.name,
+        }));
+
+        setAgents(nextAgents);
+        setSelectedAgent((current) => {
+          if (current && nextAgents.some((agent) => agent.value === current)) {
+            return current;
+          }
+
+          return nextAgents[0]?.value ?? "";
+        });
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setAgentError(
+          error instanceof ApiError ? error.message : "Could not load agents for chat."
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingAgents(false);
+        }
+      }
+    }
+
+    void loadAgents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     setSessionId(undefined);
+  }, [selectedAgent]);
+
+  useEffect(() => {
+    if (!selectedAgent) {
+      setRuntimeModel(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadAgentDetail() {
+      try {
+        const response = await getAgent(selectedAgent);
+        if (isMounted) {
+          setRuntimeModel(response.agent.runtimeModel ?? null);
+        }
+      } catch {
+        if (isMounted) {
+          setRuntimeModel(null);
+        }
+      }
+    }
+
+    void loadAgentDetail();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedAgent]);
 
   return (
@@ -307,21 +382,37 @@ export default function Chat() {
               className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500"
               value={selectedAgent}
               onChange={handleAgentChange}
+              disabled={isLoadingAgents || agents.length === 0}
             >
-              {CHAT_AGENTS.map((agent) => (
+              {agents.map((agent) => (
                 <option key={agent.value} value={agent.value}>
                   {agent.label}
                 </option>
               ))}
             </select>
             <p className="text-xs text-slate-500">
+              {isLoadingAgents
+                ? "Loading agents..."
+                : (agentError ??
+                  `${agents.length} agent${agents.length === 1 ? "" : "s"} available`)}
+            </p>
+            <p className="text-xs text-slate-500">
               Session: {sessionId ? sessionId : "new session"}
             </p>
+            <p className="text-xs text-slate-500">Model: {runtimeModel ?? "Not exposed"}</p>
           </CardContent>
         </Card>
       </div>
 
-      <ChatRuntime agentName={selectedAgent} onSessionId={setSessionId} sessionId={sessionId} />
+      {selectedAgent ? (
+        <ChatRuntime agentName={selectedAgent} onSessionId={setSessionId} sessionId={sessionId} />
+      ) : (
+        <Card className="border-slate-200 bg-white/90 shadow-sm">
+          <CardContent className="py-12 text-center text-muted-foreground">
+            {agentError ?? "No chat agents available yet."}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

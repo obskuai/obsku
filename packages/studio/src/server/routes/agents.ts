@@ -7,6 +7,7 @@ import {
   GraphDetailResponse,
   GraphListResponse,
 } from "../../shared/schemas.js";
+import type { AgentDisplayInfo } from "../../shared/types.js";
 
 export interface RegistryReader {
   getAgent(name: string): Promise<{ toDisplayInfo(): unknown } | undefined>;
@@ -27,9 +28,14 @@ export interface AgentsRouteOptions {
   rootDir?: string;
 }
 
+function getStudioRuntimeModel(): string {
+  return process.env.STUDIO_MODEL ?? process.env.OBSKU_STUDIO_MODEL ?? "amazon.nova-lite-v1:0";
+}
+
 export function createAgentsRoute(options: AgentsRouteOptions = {}): Hono {
   const app = new Hono();
   let registry = options.registry;
+  const runtimeModel = getStudioRuntimeModel();
 
   function getRegistry(): RegistryReader {
     registry ??= new Registry({ rootDir: options.rootDir });
@@ -59,9 +65,23 @@ export function createAgentsRoute(options: AgentsRouteOptions = {}): Hono {
       throw new HTTPException(404, { message: "Agent not found" });
     }
 
+    const display = agent.toDisplayInfo() as AgentDisplayInfo;
+
     const response = AgentDetailResponse.parse({
       success: true,
-      agent: agent.toDisplayInfo(),
+      agent: {
+        name: display.name,
+        promptPreview: display.promptPreview,
+        tools: display.tools,
+        memory: display.memory,
+        guardrailsCount: display.guardrailsCount,
+        handoffsCount: display.handoffsCount,
+        maxIterations: display.maxIterations,
+        streaming: display.streaming,
+        toolTimeout: display.toolTimeout,
+        toolConcurrency: display.toolConcurrency,
+        runtimeModel,
+      },
     });
 
     return c.json(response);

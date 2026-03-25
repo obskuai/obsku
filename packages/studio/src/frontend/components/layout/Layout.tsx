@@ -1,14 +1,14 @@
 import { Outlet } from "react-router-dom"
 import { useState } from "react"
 import { Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../components/ui/button"
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
+} from "../../components/ui/sheet"
 import { Sidebar } from "./Sidebar"
 
 export function Layout() {

@@ -82,6 +82,7 @@ describe("Agent and Graph API", () => {
       success: true,
       agent: {
         name: "helper-agent",
+        runtimeModel: "amazon.nova-lite-v1:0",
         promptPreview: "Helpful agent for triage.",
         tools: [{ name: "search" }, { name: "reply" }],
         guardrailsCount: { input: 1, output: 0 },

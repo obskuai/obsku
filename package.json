@@ -20,6 +20,7 @@
   "scripts": {
     "build": "bun run --filter '@obsku/framework' build && bun run --filter '@obsku/tool-code-interpreter' build && bun run --filter '*' build",
     "test": "bun test $(find packages -name '*.test.ts' ! -path '*code-interpreter-wasm*' ! -path '*code-interpreter-agentcore*') && bun test packages/tools/code-interpreter-agentcore",
+    "e2e": "playwright test",
     "test:wasm": "bun test packages/tools/code-interpreter-wasm",
     "typecheck": "tsgo --build --emitDeclarationOnly",
     "lint": "oxlint .",
@@ -31,6 +32,7 @@
     "changeset": "changeset"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@biomejs/biome": "^2.3.14",
     "@changesets/cli": "^2.30.0",
     "@nkzw/eslint-plugin": "^2.0.0",

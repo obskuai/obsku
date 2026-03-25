@@ -1,48 +1,134 @@
-import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge';
-import { format } from 'date-fns';
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-export const mockSessions = [
-  { id: 'sess_1', title: 'How to use React?', status: 'active', createdAt: new Date('2026-03-22T10:00:00Z'), messageCount: 5 },
-  { id: 'sess_2', title: 'Debug memory leak', status: 'completed', createdAt: new Date('2026-03-21T15:30:00Z'), messageCount: 24 },
-  { id: 'sess_3', title: 'Setup database', status: 'error', createdAt: new Date('2026-03-20T09:15:00Z'), messageCount: 2 },
-];
+import { Badge } from "../components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import { ApiError, listSessions } from "../lib/api";
+
+function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "active") {
+    return "default";
+  }
+
+  if (status === "failed") {
+    return "destructive";
+  }
+
+  return "secondary";
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  return "Could not load sessions. Try again in a moment.";
+}
 
 export function SessionList() {
+  const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listSessions>>["sessions"]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSessions() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await listSessions();
+        if (isMounted) {
+          setSessions(response.sessions);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(getErrorMessage(loadError));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadSessions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-6xl p-8">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Sessions</h1>
       </div>
-      
-      <div className="border rounded-md">
+
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Title</TableHead>
+              <TableHead>Model</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Messages</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockSessions.map((session) => (
-              <TableRow key={session.id}>
-                <TableCell className="font-mono text-xs">{session.id}</TableCell>
-                <TableCell>{session.title}</TableCell>
-                <TableCell>
-                  <Badge variant={session.status === 'active' ? 'default' : session.status === 'error' ? 'destructive' : 'secondary'}>
-                    {session.status}
-                  </Badge>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  Loading sessions...
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {format(session.createdAt, 'MMM d, yyyy HH:mm')}
-                </TableCell>
-                <TableCell className="text-right">{session.messageCount}</TableCell>
               </TableRow>
-            ))}
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  {error}
+                </TableCell>
+              </TableRow>
+            ) : sessions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No sessions found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              sessions.map((session) => (
+                <TableRow key={session.id}>
+                  <TableCell className="font-mono text-xs">
+                    <Link to={`/sessions/${session.id}`} className="hover:underline text-primary">
+                      {session.id}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{session.title}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {session.runtimeModel ?? "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(session.status)}>{session.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {format(new Date(session.createdAt), "MMM d, yyyy HH:mm")}
+                  </TableCell>
+                  <TableCell className="text-right">{session.messageCount}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

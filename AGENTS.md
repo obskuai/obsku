@@ -9,6 +9,7 @@
 ## Dev Commands
 - Build: `bun run build`
 - Test: `bun run test` (NOT bare `bun test`; direct run double-counts via symlinks)
+- Test (studio): `cd packages/studio && bun run test` (NOT bare `bun test`; picks up playwright e2e/)
 - Typecheck: `bun run typecheck`
 - Lint: `bun run lint`
 - Lint fix: `bun run lint:fix`

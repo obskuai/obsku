@@ -10,12 +10,12 @@ describe("agent pages", () => {
   const agentDetailContent = readFileSync(agentDetailPath, "utf-8");
 
   describe("AgentList", () => {
-    it("renders table with mock data", () => {
-      expect(agentListContent).toContain("export const MOCK_AGENTS");
+    it("renders table with agent data", () => {
       expect(agentListContent).toContain("<Table>");
       expect(agentListContent).toContain("<TableHeader>");
       expect(agentListContent).toContain("<TableBody>");
-      expect(agentListContent).toContain("filteredAgents.map");
+      expect(agentListContent).toContain("filteredAgents");
+      expect(agentListContent).toContain("listAgents");
       expect(agentListContent).toContain("tools");
     });
 
@@ -24,15 +24,15 @@ describe("agent pages", () => {
       expect(agentListContent).toContain("setSearchTerm");
       expect(agentListContent).toContain("<Input");
       expect(agentListContent).toContain('type="search"');
-      expect(agentListContent).toContain("MOCK_AGENTS.filter");
+      expect(agentListContent).toContain("filteredAgents");
     });
   });
 
   describe("AgentDetail", () => {
     it("renders agent details and badges", () => {
       expect(agentDetailContent).toContain("useParams");
-      expect(agentDetailContent).toContain("MOCK_AGENTS.find");
-      expect(agentDetailContent).toContain("agent.prompt");
+      expect(agentDetailContent).toContain("getAgent");
+      expect(agentDetailContent).toContain("promptPreview");
       expect(agentDetailContent).toContain("<Badge");
       expect(agentDetailContent).toContain("Chat with this agent");
     });

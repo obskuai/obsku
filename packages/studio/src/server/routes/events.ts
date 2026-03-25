@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
 import type { EventDisplayInfo } from "../../shared/types.js";
 import { type EventBroadcastHandler, eventBridge } from "../event-bridge.js";
 
@@ -21,62 +20,70 @@ export function createEventsRoute(options: EventsRouteOptions = {}): Hono {
 
   app.get("/", (c) => {
     const sessionId = c.req.query("sessionId");
+    const encoder = new TextEncoder();
+    let closed = false;
+    let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
+    let unsubscribe: (() => void) | undefined;
 
-    return streamSSE(c, async (stream) => {
-      let isClosed = false;
-      let resolveClosed!: () => void;
+    const cleanup = (): void => {
+      if (closed) {
+        return;
+      }
 
-      const closed = new Promise<void>((resolve) => {
-        resolveClosed = resolve;
-      });
+      closed = true;
 
-      const cleanup = (): void => {
-        if (isClosed) return;
-        isClosed = true;
+      if (heartbeat !== undefined) {
         clearInterval(heartbeat);
-        unsubscribe();
-        c.req.raw.signal.removeEventListener("abort", handleAbort);
-        resolveClosed();
-      };
+      }
 
-      const sendEvent = async (event: EventDisplayInfo): Promise<void> => {
-        if (sessionId && event.sessionId !== sessionId) {
-          return;
-        }
-
-        await stream.writeSSE({
-          event: event.type,
-          data: JSON.stringify(event),
-        });
-      };
-
-      const handleAbort = (): void => {
-        cleanup();
-      };
-
-      const unsubscribe = bridge.subscribe((event) => {
-        void sendEvent(event).catch(() => {
-          cleanup();
-        });
-      });
-
-      const heartbeat = setInterval(() => {
-        void stream.write(": heartbeat\n\n").catch(() => {
-          cleanup();
-        });
-      }, heartbeatIntervalMs);
-
-      stream.onAbort(() => {
-        cleanup();
-      });
-
-      c.req.raw.signal.addEventListener("abort", handleAbort, { once: true });
+      unsubscribe?.();
 
       try {
-        await closed;
-      } finally {
+        controller?.close();
+      } catch {}
+    };
+
+    const enqueue = (chunk: string): void => {
+      if (closed) {
+        return;
+      }
+
+      try {
+        controller?.enqueue(encoder.encode(chunk));
+      } catch {
         cleanup();
       }
+    };
+
+    const readable = new ReadableStream<Uint8Array>({
+      start(nextController) {
+        controller = nextController;
+        unsubscribe = bridge.subscribe((event: EventDisplayInfo) => {
+          if (sessionId && event.sessionId !== sessionId) {
+            return;
+          }
+
+          enqueue(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+        });
+
+        heartbeat = setInterval(() => {
+          enqueue(": heartbeat\n\n");
+        }, heartbeatIntervalMs);
+      },
+      cancel() {
+        cleanup();
+      },
+    });
+
+    c.req.raw.signal.addEventListener("abort", cleanup, { once: true });
+
+    return new Response(readable, {
+      headers: {
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream",
+      },
     });
   });
 

@@ -1,7 +1,6 @@
 import type { AgentEvent, DefaultPublicPayload } from "@obsku/framework";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { streamSSE } from "hono/streaming";
 import { ChatRequest } from "../../shared/schemas.js";
 
 export type ChatAgentEvent = DefaultPublicPayload<AgentEvent>;
@@ -16,7 +15,9 @@ export interface ExecutableAgent {
 }
 
 export interface ExecutableAgentRegistry {
-  getExecutable(agentName: string): ExecutableAgent | undefined;
+  getExecutable(
+    agentName: string
+  ): ExecutableAgent | Promise<ExecutableAgent | undefined> | undefined;
 }
 
 export type ChatAgentRegistry =
@@ -28,10 +29,10 @@ export interface ChatRouteOptions {
   agentRegistry?: ChatAgentRegistry;
 }
 
-function resolveAgent(
+async function resolveAgent(
   registry: ChatAgentRegistry | undefined,
   agentName: string
-): ExecutableAgent | undefined {
+): Promise<ExecutableAgent | undefined> {
   if (!registry) {
     return undefined;
   }
@@ -41,7 +42,7 @@ function resolveAgent(
   }
 
   if ("getExecutable" in registry && typeof registry.getExecutable === "function") {
-    return registry.getExecutable(agentName);
+    return await registry.getExecutable(agentName);
   }
 
   return (registry as Record<string, ExecutableAgent>)[agentName];
@@ -57,6 +58,17 @@ function getTextChunk(event: ChatAgentEvent): string | undefined {
   }
 
   return typeof event.data.content === "string" ? event.data.content : undefined;
+}
+
+function stripThinkingBlocks(text: string): string {
+  let visible = text.replace(/<thinking>[\s\S]*?<\/thinking>/g, "");
+  const openIndex = visible.lastIndexOf("<thinking");
+
+  if (openIndex !== -1) {
+    visible = visible.slice(0, openIndex);
+  }
+
+  return visible.trimStart();
 }
 
 export function createChatRoute(options: ChatRouteOptions = {}): Hono {
@@ -80,7 +92,7 @@ export function createChatRoute(options: ChatRouteOptions = {}): Hono {
     }
 
     const { agentName, message } = parsed.data;
-    const agent = resolveAgent(options.agentRegistry, agentName);
+    const agent = await resolveAgent(options.agentRegistry, agentName);
 
     if (!agent) {
       throw new HTTPException(404, {
@@ -89,71 +101,100 @@ export function createChatRoute(options: ChatRouteOptions = {}): Hono {
     }
 
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
+    const encoder = new TextEncoder();
+    let closed = false;
+    let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+    let rawText = "";
+    let visibleText = "";
 
-    return streamSSE(c, async (stream) => {
-      let cumulativeText = "";
-      let writeChain = Promise.resolve();
-      let closed = false;
-
-      const close = (): void => {
-        closed = true;
-      };
-
-      const enqueue = (event: string, data: Record<string, unknown>): void => {
-        writeChain = writeChain.then(async () => {
-          if (closed) {
-            return;
-          }
-
-          await stream.writeSSE({
-            event,
-            data: JSON.stringify(data),
-          });
-        });
-      };
-
-      stream.onAbort(close);
-      c.req.raw.signal.addEventListener("abort", close, { once: true });
-
-      enqueue("session", { agentName, sessionId });
-
-      try {
-        const result = await agent.run(message, {
-          sessionId,
-          onEvent: (event) => {
-            const chunk = getTextChunk(event);
-            if (!chunk) {
-              return;
-            }
-
-            cumulativeText += chunk;
-            enqueue("message", {
-              sessionId,
-              text: cumulativeText,
-            });
-          },
-        });
-
-        if (result !== cumulativeText) {
-          cumulativeText = result;
-          enqueue("message", {
-            sessionId,
-            text: cumulativeText,
-          });
-        }
-
-        enqueue("done", {
-          sessionId,
-          text: cumulativeText,
-        });
-      } catch (error) {
-        enqueue("error", {
-          sessionId,
-          message: getErrorMessage(error),
-        });
+    const cleanup = (): void => {
+      if (closed) {
+        return;
       }
 
-      await writeChain;
+      closed = true;
+
+      try {
+        controller?.close();
+      } catch {}
+    };
+
+    const enqueue = (event: string, data: Record<string, unknown>): void => {
+      if (closed) {
+        return;
+      }
+
+      try {
+        controller?.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      } catch {
+        cleanup();
+      }
+    };
+
+    const readable = new ReadableStream<Uint8Array>({
+      start(nextController) {
+        controller = nextController;
+        enqueue("session", { agentName, sessionId });
+
+        void (async () => {
+          try {
+            const result = await agent.run(message, {
+              sessionId,
+              onEvent: (event) => {
+                const chunk = getTextChunk(event);
+                if (!chunk) {
+                  return;
+                }
+
+                rawText += chunk;
+                const nextVisibleText = stripThinkingBlocks(rawText);
+
+                if (nextVisibleText !== visibleText) {
+                  visibleText = nextVisibleText;
+                  enqueue("message", {
+                    sessionId,
+                    text: visibleText,
+                  });
+                }
+              },
+            });
+
+            const nextVisibleText = stripThinkingBlocks(result);
+            if (nextVisibleText !== visibleText) {
+              visibleText = nextVisibleText;
+              enqueue("message", {
+                sessionId,
+                text: visibleText,
+              });
+            }
+
+            enqueue("done", {
+              sessionId,
+              text: visibleText,
+            });
+          } catch (error) {
+            enqueue("error", {
+              sessionId,
+              message: getErrorMessage(error),
+            });
+          } finally {
+            cleanup();
+          }
+        })();
+      },
+      cancel() {
+        cleanup();
+      },
+    });
+
+    c.req.raw.signal.addEventListener("abort", cleanup, { once: true });
+
+    return new Response(readable, {
+      headers: {
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream",
+      },
     });
   });
 

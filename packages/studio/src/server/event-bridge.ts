@@ -1,9 +1,10 @@
 import type {
   AgentEvent,
   AgentEventType,
+  DefaultPublicPayload,
   EventBusService,
-  SessionStartEvent,
   SessionEndEvent,
+  SessionStartEvent,
 } from "@obsku/framework";
 import type { EventDisplayInfo, SessionDisplayStatus } from "../shared/types.js";
 
@@ -15,6 +16,7 @@ interface SessionInfo {
   id: string;
   title: string;
   createdAt: number;
+  runtimeModel?: string;
   updatedAt: number;
   status: SessionDisplayStatus;
   messageCount: number;
@@ -76,9 +78,7 @@ export class EventBridge {
   }
 
   getSessions(): SessionInfo[] {
-    return Array.from(this.sessions.values()).sort(
-      (a, b) => b.updatedAt - a.updatedAt
-    );
+    return Array.from(this.sessions.values()).sort((a, b) => b.updatedAt - a.updatedAt);
   }
 
   getSession(sessionId: string): SessionInfo | undefined {
@@ -134,6 +134,10 @@ export class EventBridge {
     return hadSession;
   }
 
+  async recordEvent(event: AgentEvent | DefaultPublicPayload<AgentEvent>): Promise<void> {
+    await this.handleEvent(normalizeEvent(event));
+  }
+
   private async consumeEvents(): Promise<void> {
     if (!this.eventBusSubscription) return;
 
@@ -172,6 +176,7 @@ export class EventBridge {
         id: sessionId,
         title: startEvent.input?.slice(0, 100) ?? `Session ${sessionId.slice(0, 8)}`,
         createdAt: startEvent.timestamp ?? now,
+        runtimeModel: this.extractRuntimeModel(event),
         updatedAt: now,
         status: "active",
         messageCount: 0,
@@ -180,6 +185,7 @@ export class EventBridge {
       const endEvent = event as SessionEndEvent;
       const session = this.sessions.get(sessionId);
       if (session) {
+        session.runtimeModel ??= this.extractRuntimeModel(event);
         session.status = this.mapSessionStatus(endEvent.status);
         session.updatedAt = Date.now();
         if (endEvent.turns !== undefined) {
@@ -189,9 +195,7 @@ export class EventBridge {
     }
   }
 
-  private mapSessionStatus(
-    status?: "complete" | "failed" | "interrupted"
-  ): SessionDisplayStatus {
+  private mapSessionStatus(status?: "complete" | "failed" | "interrupted"): SessionDisplayStatus {
     switch (status) {
       case "complete":
         return "completed";
@@ -282,10 +286,7 @@ export class EventBridge {
     return "agent";
   }
 
-  private determineSeverity(
-    type: string,
-    event: AgentEvent
-  ): EventDisplayInfo["severity"] {
+  private determineSeverity(type: string, event: AgentEvent): EventDisplayInfo["severity"] {
     if (type.includes("error") || type.includes("failed") || type.includes("blocked")) {
       return "error";
     }
@@ -314,6 +315,22 @@ export class EventBridge {
     }
     return undefined;
   }
+
+  private extractRuntimeModel(event: AgentEvent): string | undefined {
+    if ("runtimeModel" in event && typeof event.runtimeModel === "string") {
+      return event.runtimeModel;
+    }
+    return undefined;
+  }
+}
+
+function normalizeEvent(event: AgentEvent | DefaultPublicPayload<AgentEvent>): AgentEvent {
+  if ("data" in event && typeof event.data === "object" && event.data !== null) {
+    const { data, ...rest } = event;
+    return { ...rest, ...data } as AgentEvent;
+  }
+
+  return event as AgentEvent;
 }
 
 export const eventBridge = new EventBridge();

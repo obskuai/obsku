@@ -49,7 +49,7 @@ describe("Agent schemas", () => {
   test("AgentListResponse accepts valid response", () => {
     const response = {
       success: true as const,
-      agents: [validAgent],
+      agents: [{ name: "test-agent", description: "Test prompt preview", toolCount: 1 }],
     };
     const result = AgentListResponse.safeParse(response);
     expect(result.success).toBe(true);
@@ -146,6 +146,10 @@ describe("Session schemas", () => {
     const response = {
       success: true as const,
       sessions: [validSession],
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
     };
     const result = SessionListResponse.safeParse(response);
     expect(result.success).toBe(true);
@@ -155,12 +159,13 @@ describe("Session schemas", () => {
     const response = {
       success: true as const,
       session: validSession,
-      messages: [
+      events: [
         {
-          id: "msg-1",
-          role: "user" as const,
-          content: "Hello",
+          type: "agent.thinking",
+          category: "agent" as const,
           timestamp: Date.now(),
+          data: { content: "Thinking..." },
+          severity: "info" as const,
         },
       ],
     };

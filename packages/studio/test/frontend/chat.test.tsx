@@ -1,7 +1,15 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import type { ChatModelRunResult } from "@assistant-ui/react";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
+
+if (typeof document === "undefined") {
+  try {
+    GlobalRegistrator.register();
+  } catch {}
+}
+
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import type { ChatModelRunResult } from "@assistant-ui/react";
 import { fireEvent, render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import Chat, {
   createChatModelAdapter,
@@ -10,33 +18,67 @@ import Chat, {
 } from "../../src/frontend/pages/Chat";
 
 beforeAll(() => {
-  GlobalRegistrator.register();
-});
-
-afterAll(() => {
-  GlobalRegistrator.unregister();
-});
-
-beforeEach(() => {
-  window.HTMLElement.prototype.scrollIntoView = function scrollIntoView() {};
+  if (typeof window !== "undefined") {
+    window.HTMLElement.prototype.scrollIntoView = function scrollIntoView() {};
+  }
 });
 
 describe("Chat page", () => {
-  it("renders the agent selector", () => {
-    const view = render(<Chat />);
+  const savedChatFetch = globalThis.fetch;
+  afterAll(() => {
+    globalThis.fetch = savedChatFetch;
+  });
+
+  it("renders the agent selector with loaded agents", async () => {
+    const originalFetch = globalThis.fetch;
+
+    const mockFetch = Object.assign(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            agents: [
+              { name: "Customer Support Bot", description: "Help agent", toolCount: 0 },
+              { name: "Code Reviewer", description: "Review agent", toolCount: 0 },
+            ],
+          }),
+          { headers: { "Content-Type": "application/json" }, status: 200 }
+        ),
+      { preconnect: originalFetch.preconnect }
+    ) satisfies typeof fetch;
+
+    globalThis.fetch = mockFetch;
+
+    const view = render(
+      <MemoryRouter>
+        <Chat />
+      </MemoryRouter>
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const select = view.getByLabelText("Agent");
     expect(select).toBeTruthy();
     expect(view.getByRole("option", { name: "Customer Support Bot" })).toBeTruthy();
     expect(view.getByRole("option", { name: "Code Reviewer" })).toBeTruthy();
 
-    fireEvent.change(select, { target: { value: "code-reviewer" } });
+    fireEvent.change(select, { target: { value: "Code Reviewer" } });
 
-    expect((select as HTMLSelectElement).value).toBe("code-reviewer");
+    expect((select as HTMLSelectElement).value).toBe("Code Reviewer");
+
+    globalThis.fetch = originalFetch;
   });
 });
 
 describe("chat adapter helpers", () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+  afterAll(() => {
+    globalThis.fetch = originalFetch;
+  });
+
   it("parses SSE event blocks", () => {
     const parsed = parseSseEventBlock('event: message\ndata: {"text":"Hello"}');
 
@@ -50,23 +92,28 @@ describe("chat adapter helpers", () => {
     const fetchCalls: Array<RequestInit | undefined> = [];
     const sessionIds: string[] = [];
 
-    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-      fetchCalls.push(init);
+    const mockFetch = Object.assign(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        fetchCalls.push(init);
 
-      return new Response(
-        [
-          'event: session\ndata: {"sessionId":"session-1"}',
-          'event: message\ndata: {"sessionId":"session-1","text":"Hello"}',
-          'event: message\ndata: {"sessionId":"session-1","text":"Hello world"}',
-          'event: done\ndata: {"sessionId":"session-1","text":"Hello world"}',
-          "",
-        ].join("\n\n"),
-        {
-          headers: { "Content-Type": "text/event-stream" },
-          status: 200,
-        }
-      );
-    }) as typeof fetch;
+        return new Response(
+          [
+            'event: session\ndata: {"sessionId":"session-1"}',
+            'event: message\ndata: {"sessionId":"session-1","text":"Hello"}',
+            'event: message\ndata: {"sessionId":"session-1","text":"Hello world"}',
+            'event: done\ndata: {"sessionId":"session-1","text":"Hello world"}',
+            "",
+          ].join("\n\n"),
+          {
+            headers: { "Content-Type": "text/event-stream" },
+            status: 200,
+          }
+        );
+      },
+      { preconnect: originalFetch.preconnect }
+    ) satisfies typeof fetch;
+
+    globalThis.fetch = mockFetch;
 
     const adapter = createChatModelAdapter({
       agentName: "code-reviewer",

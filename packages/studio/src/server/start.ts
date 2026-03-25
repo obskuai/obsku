@@ -26,7 +26,7 @@ export function startServer(config: ServerConfig = {}): ServerInstance {
     server.close();
   };
 
-  const actualPort = server.port ?? requestedPort;
+  const actualPort = (server.address() as { port: number } | null)?.port ?? requestedPort;
 
   server.on("listening", () => {
     onStart?.(actualPort, hostname);

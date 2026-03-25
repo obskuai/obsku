@@ -151,6 +151,14 @@ const addTool: InternalPlugin = {
   },
 };
 
+export const coreAgentBenchmarkDefinition = {
+  name: "core-agent-benchmark",
+  prompt:
+    "You are a concise assistant. Always execute required tools before answering. Do not invent tool results.",
+  streaming: true,
+  tools: [echoTool, addTool],
+};
+
 export const coreAgentScenario: Scenario<BenchmarkContext> = {
   description: "Basic agent loop with deterministic echo/add tool use.",
   name: "core-agent",
@@ -159,13 +167,7 @@ export const coreAgentScenario: Scenario<BenchmarkContext> = {
   async run(ctx) {
     const provider = await ctx.createBedrockProvider({ maxOutputTokens: 512 });
 
-    const subject = agent({
-      name: "core-agent-benchmark",
-      prompt:
-        "You are a concise assistant. Always execute required tools before answering. Do not invent tool results.",
-      streaming: true,
-      tools: [echoTool, addTool],
-    });
+    const subject = agent(coreAgentBenchmarkDefinition);
 
     const { events, result: finalOutput } = await ctx.collectAgentEvents(subject, (sessionId) =>
       subject.run(INPUT, provider, { sessionId })

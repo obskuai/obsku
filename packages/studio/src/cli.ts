@@ -5,7 +5,7 @@
  * Entry point for the obsku-studio command
  */
 import { parseArgs } from "node:util";
-import { version } from "./index.js";
+const version = "0.1.0";
 
 export interface CliOptions {
   port: number;

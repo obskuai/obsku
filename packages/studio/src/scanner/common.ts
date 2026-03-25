@@ -39,7 +39,16 @@ export function createScanProject(rootDir: string): Project {
     useInMemoryFileSystem: false,
   });
 
-  project.addSourceFilesAtPaths(path.join(rootDir, "**/*.ts"));
+  project.addSourceFilesAtPaths([
+    path.join(rootDir, "**/*.ts"),
+    `!${path.join(rootDir, "**/*.d.ts")}`,
+    `!${path.join(rootDir, "**/*.test.ts")}`,
+    `!${path.join(rootDir, "**/*.config.ts")}`,
+    `!${path.join(rootDir, "**/node_modules/**")}`,
+    `!${path.join(rootDir, "**/dist/**")}`,
+    `!${path.join(rootDir, "**/test/**")}`,
+    `!${path.join(rootDir, ".*/**")}`,
+  ]);
 
   for (const sourceFile of project.getSourceFiles()) {
     if (shouldSkipFile(sourceFile.getFilePath())) {
