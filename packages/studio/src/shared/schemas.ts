@@ -125,6 +125,7 @@ export const SessionDisplaySchema = z.object({
   title: z.string(),
   createdAt: z.number(),
   runtimeModel: z.string().optional(),
+  runtimeProvider: z.string().optional(),
   status: z.enum(["active", "completed", "failed", "interrupted"]),
   messageCount: z.number(),
   updatedAt: z.number().optional(),

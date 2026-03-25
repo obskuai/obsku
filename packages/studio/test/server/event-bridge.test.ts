@@ -63,13 +63,17 @@ function createMockEventBus(): EventBusService {
 function createSessionStartEvent(
   sessionId: string,
   input?: string,
-  timestamp?: number
+  timestamp?: number,
+  runtimeModel?: string,
+  runtimeProvider?: string
 ): SessionStartEvent {
   return {
     type: "session.start",
     sessionId,
     input,
     timestamp: timestamp ?? Date.now(),
+    runtimeModel,
+    runtimeProvider,
   };
 }
 
@@ -186,6 +190,32 @@ describe("EventBridge", () => {
 
       const session = bridge.getSession(sessionId);
       expect(session!.status).toBe("interrupted");
+
+      await bridge.stop();
+    });
+
+    it("should track runtimeModel and runtimeProvider on session creation", async () => {
+      const eventBus = createMockEventBus();
+      const bridge = createEventBridge();
+      await bridge.start(eventBus);
+
+      const sessionId = "test-session-runtime";
+      await eventBus.publish(
+        createSessionStartEvent(
+          sessionId,
+          "Hello",
+          Date.now(),
+          "claude-3-sonnet",
+          "anthropic"
+        )
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const session = bridge.getSession(sessionId);
+      expect(session).toBeDefined();
+      expect(session!.runtimeModel).toBe("claude-3-sonnet");
+      expect(session!.runtimeProvider).toBe("anthropic");
 
       await bridge.stop();
     });

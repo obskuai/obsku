@@ -9,6 +9,8 @@ const StudioConfigSchema = z.object({
   graphs: z.array(z.any()).optional().default([]),
   scanDir: z.string().optional(),
   scanIgnore: z.array(z.string()).optional().default([]),
+  provider: z.enum(['bedrock', 'anthropic', 'google', 'groq', 'openai']).optional(),
+  model: z.string().optional(),
 });
 
 export interface StudioConfig {
@@ -16,6 +18,8 @@ export interface StudioConfig {
   graphs: Graph[];
   scanDir?: string;
   scanIgnore: string[];
+  provider?: string;
+  model?: string;
 }
 
 export interface ConfigLoadResult {
@@ -62,6 +66,8 @@ export async function loadStudioConfig(
       graphs: validated.graphs as Graph[],
       scanDir: validated.scanDir,
       scanIgnore: validated.scanIgnore,
+      provider: validated.provider,
+      model: validated.model,
     },
   };
 }

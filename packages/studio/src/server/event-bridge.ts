@@ -17,6 +17,7 @@ interface SessionInfo {
   title: string;
   createdAt: number;
   runtimeModel?: string;
+  runtimeProvider?: string;
   updatedAt: number;
   status: SessionDisplayStatus;
   messageCount: number;
@@ -177,6 +178,7 @@ export class EventBridge {
         title: startEvent.input?.slice(0, 100) ?? `Session ${sessionId.slice(0, 8)}`,
         createdAt: startEvent.timestamp ?? now,
         runtimeModel: this.extractRuntimeModel(event),
+        runtimeProvider: this.extractRuntimeProvider(event),
         updatedAt: now,
         status: "active",
         messageCount: 0,
@@ -186,6 +188,7 @@ export class EventBridge {
       const session = this.sessions.get(sessionId);
       if (session) {
         session.runtimeModel ??= this.extractRuntimeModel(event);
+        session.runtimeProvider ??= this.extractRuntimeProvider(event);
         session.status = this.mapSessionStatus(endEvent.status);
         session.updatedAt = Date.now();
         if (endEvent.turns !== undefined) {
@@ -319,6 +322,13 @@ export class EventBridge {
   private extractRuntimeModel(event: AgentEvent): string | undefined {
     if ("runtimeModel" in event && typeof event.runtimeModel === "string") {
       return event.runtimeModel;
+    }
+    return undefined;
+  }
+
+  private extractRuntimeProvider(event: AgentEvent): string | undefined {
+    if ("runtimeProvider" in event && typeof event.runtimeProvider === "string") {
+      return event.runtimeProvider;
     }
     return undefined;
   }

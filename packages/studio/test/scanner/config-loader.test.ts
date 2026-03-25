@@ -156,6 +156,113 @@ describe("loadStudioConfig", () => {
       expect(result!.config.scanDir).toBeUndefined();
     });
   });
+
+  describe("provider and model fields", () => {
+    it("parses config with provider and model", async () => {
+      writeFileSync(
+        join(tempDir, "studio.config.ts"),
+        `
+        export default {
+          agents: [],
+          graphs: [],
+          provider: "bedrock",
+          model: "anthropic.claude-3-sonnet-20240229-v1:0",
+        };
+      `
+      );
+
+      const result = await loadStudioConfig(tempDir);
+
+      expect(result).not.toBeNull();
+      expect(result!.config.provider).toBe("bedrock");
+      expect(result!.config.model).toBe("anthropic.claude-3-sonnet-20240229-v1:0");
+    });
+
+    it("supports all valid provider values", async () => {
+      const providers = ["bedrock", "anthropic", "google", "groq", "openai"];
+
+      for (const provider of providers) {
+        const configPath = join(tempDir, "studio.config.ts");
+        writeFileSync(
+          configPath,
+          `
+          export default {
+            provider: "${provider}",
+            model: "test-model",
+          };
+        `
+        );
+
+        const result = await loadStudioConfig(tempDir);
+
+        expect(result!.config.provider).toBe(provider);
+      }
+    });
+
+    it("rejects invalid provider values", async () => {
+      writeFileSync(
+        join(tempDir, "studio.config.ts"),
+        `
+        export default {
+          provider: "invalid-provider",
+          model: "test-model",
+        };
+      `
+      );
+
+      await expect(loadStudioConfig(tempDir)).rejects.toThrow(
+        /Invalid studio.config.ts/
+      );
+    });
+
+    it("works without provider and model for backward compatibility", async () => {
+      writeFileSync(
+        join(tempDir, "studio.config.ts"),
+        `
+        export default {
+          agents: [{ name: "agent1", prompt: "test" }],
+          graphs: [],
+          scanDir: "./src",
+        };
+      `
+      );
+
+      const result = await loadStudioConfig(tempDir);
+
+      expect(result).not.toBeNull();
+      expect(result!.config.agents).toHaveLength(1);
+      expect(result!.config.provider).toBeUndefined();
+      expect(result!.config.model).toBeUndefined();
+    });
+
+    it("preserves all existing fields along with new ones", async () => {
+      writeFileSync(
+        join(tempDir, "studio.config.ts"),
+        `
+        export default {
+          agents: [{ name: "agent1", prompt: "test" }],
+          graphs: [{ entry: "graph1" }],
+          scanDir: "./src",
+          scanIgnore: ["node_modules"],
+          provider: "openai",
+          model: "gpt-4",
+        };
+      `
+      );
+
+      const result = await loadStudioConfig(tempDir);
+
+      expect(result).not.toBeNull();
+      expect(result!.config.agents).toHaveLength(1);
+      expect(result!.config.agents[0].name).toBe("agent1");
+      expect(result!.config.graphs).toHaveLength(1);
+      expect(result!.config.graphs[0].entry).toBe("graph1");
+      expect(result!.config.scanDir).toBe("./src");
+      expect(result!.config.scanIgnore).toEqual(["node_modules"]);
+      expect(result!.config.provider).toBe("openai");
+      expect(result!.config.model).toBe("gpt-4");
+    });
+  });
 });
 
 describe("mergeAgents", () => {

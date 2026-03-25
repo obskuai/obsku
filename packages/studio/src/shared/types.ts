@@ -112,6 +112,7 @@ export interface SessionDisplayInfo {
   /** Creation timestamp */
   createdAt: number;
   runtimeModel?: string;
+  runtimeProvider?: string;
   /** Current status */
   status: SessionDisplayStatus;
   /** Number of messages in session */
