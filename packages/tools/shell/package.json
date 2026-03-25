@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
+    "build": "bun build src/index.ts --target=node --outdir dist && rm -f tsconfig.tsbuildinfo && bunx tsgo --emitDeclarationOnly",
     "test": "bun test",
     "typecheck": "tsgo --noEmit",
     "prepack": "bun run ../../../scripts/resolve-workspace-deps.ts",
