@@ -118,20 +118,22 @@ async function handleToolUseEnd(
   await finalizeToolUseContent(state, emit);
 }
 
-async function handleContentDelta(
+function handleContentDelta(
   event: Extract<LLMStreamEvent, { type: "text_delta" }>,
   state: StreamState,
   emit: EmitFn
-): Promise<void> {
+): void {
   appendText(state.content, event.content);
-  await Effect.runPromise(
+  Effect.runPromise(
     emit({
       content: event.content,
       phase: "executing",
       timestamp: Date.now(),
       type: "stream.chunk",
     })
-  );
+  ).catch((e) => {
+    process.stderr.write(`[stream] emit error: ${String(e)}\n`);
+  });
 }
 
 function handleStreamEnd(
@@ -167,7 +169,7 @@ export const streamingStrategy: LLMCallStrategy = (
 
         for await (const event of stream) {
           if (event.type === "text_delta") {
-            await handleContentDelta(event, state, emit);
+            handleContentDelta(event, state, emit);
             continue;
           }
           if (event.type === "tool_use_start") {
