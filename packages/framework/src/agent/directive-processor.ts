@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { GuardrailError } from "../guardrails";
+import { handleGuardrailError } from "./guardrail-handler";
 import { runOutputGuardrails } from "../guardrails/runner";
 import type { GuardrailFn, LLMResponse, Message, TextContent } from "../types";
 import { BlockType } from "../types/constants";
@@ -43,19 +43,7 @@ export function handleTextBlocksAndGuardrails(
       try {
         yield* Effect.promise(() => runOutputGuardrails(nextText, outputGuardrails, messages));
       } catch (error: unknown) {
-        if (error instanceof GuardrailError) {
-          yield* emit({
-            reason: error.reason,
-            timestamp: Date.now(),
-            type: "guardrail.output.blocked",
-          });
-          yield* emit({
-            from: "Executing",
-            timestamp: Date.now(),
-            to: "Error",
-            type: "agent.transition",
-          });
-        }
+        handleGuardrailError(error, emit, 'output');
         throw error;
       }
     }

@@ -129,10 +129,12 @@ export type { ErrorClass } from "./error-utils";
 // ============================================================================
 export {
   classifyError,
+  extractHttpStatus,
   getErrorMessage,
   getErrorStack,
   isRetryEligible,
   NETWORK_ERROR_CODES,
+  PROVIDER_INSTABILITY_STATUS_CODES,
   toErrorRecord,
 } from "./error-utils";
 export { ExecTimeoutError } from "./exec";

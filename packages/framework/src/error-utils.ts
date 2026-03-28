@@ -6,7 +6,7 @@
  */
 
 /** HTTP status codes indicating provider instability (rate limits, server errors) */
-const PROVIDER_INSTABILITY_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+export const PROVIDER_INSTABILITY_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 /** Network error codes indicating connectivity issues */
 export const NETWORK_ERROR_CODES = new Set([
@@ -54,7 +54,11 @@ export function getErrorStack(error: unknown): string | undefined {
  */
 export type ErrorClass = "provider_instability" | "framework_regression";
 
-function extractHttpStatus(
+/**
+ * Extract HTTP status code from error record and metadata.
+ * Checks $metadata.httpStatusCode, statusCode, and status fields.
+ */
+export function extractHttpStatus(
   record: Record<string, unknown> | undefined,
   metadata: Record<string, unknown> | undefined
 ): number | undefined {

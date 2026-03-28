@@ -6,6 +6,7 @@ import type {
   OutputPolicy,
 } from "@obsku/framework";
 import {
+  extractHttpStatus,
   getOutputPolicy,
   NETWORK_ERROR_CODES,
   type OutputMode,
@@ -116,16 +117,9 @@ export function errorToHttpStatus(error: unknown): number {
   const code = typeof record["code"] === "string" ? record["code"] : undefined;
   const message = typeof record["message"] === "string" ? record["message"] : undefined;
 
-  // Check HTTP status code in error metadata
+  // Extract HTTP status from error using shared utility
   const metadata = toErrorRecord(record["$metadata"]);
-  const httpStatus =
-    typeof metadata?.["httpStatusCode"] === "number"
-      ? metadata["httpStatusCode"]
-      : typeof record["statusCode"] === "number"
-        ? record["statusCode"]
-        : typeof record["status"] === "number"
-          ? record["status"]
-          : undefined;
+  const httpStatus = extractHttpStatus(record, metadata);
 
   // Auth errors → 401
   if (httpStatus === 401 || httpStatus === 403) return HTTP_STATUS.UNAUTHORIZED;

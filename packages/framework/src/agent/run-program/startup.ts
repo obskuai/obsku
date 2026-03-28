@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { GuardrailError } from "../../guardrails/index";
+import { handleGuardrailError } from "../guardrail-handler";
 import { runInputGuardrails } from "../../guardrails/runner";
 import type { MemoryInjection } from "../../memory/types";
 import { BlockType, MessageRole } from "../../types/constants";
@@ -120,19 +120,7 @@ export function buildMessages(
       try {
         yield* Effect.promise(() => runInputGuardrails(input, guardrails, messages));
       } catch (error: unknown) {
-        if (error instanceof GuardrailError) {
-          yield* emit({
-            reason: error.reason,
-            timestamp: Date.now(),
-            type: "guardrail.input.blocked",
-          });
-          yield* emit({
-            from: "Executing",
-            timestamp: Date.now(),
-            to: "Error",
-            type: "agent.transition",
-          });
-        }
+        handleGuardrailError(error, (event) => { void emit(event); }, 'input');
         throw error;
       }
     }
