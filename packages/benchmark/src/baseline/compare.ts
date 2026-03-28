@@ -1,3 +1,4 @@
+import { isErrnoException } from "@obsku/framework";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { baselinePath, ensureBaselinesDir, getBaselinesBaseDir } from "../artifacts/storage";
@@ -43,7 +44,7 @@ export async function loadBaseline(scenarioName: string): Promise<BaselineSnapsh
     const raw = await readFile(baselinePath(baselinesBaseDir, scenarioName), "utf8");
     return toBaselineSnapshot(JSON.parse(raw));
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (isErrnoException(error) && error.code === "ENOENT") {
       return null;
     }
     throw error;

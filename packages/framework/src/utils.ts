@@ -10,6 +10,6 @@ export {
   toToolResultEnvelope,
   toToolResultOutput,
 } from "./tool-result-utils";
-export { isRecord } from "./utils/type-guards";
+export { isErrnoException, isRecord } from "./utils/type-guards";
 export * from "./utils/env-filter";
 export { getErrorMessage } from "./error-utils";

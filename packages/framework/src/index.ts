@@ -352,6 +352,7 @@ export {
   assertNever,
   generateId,
   isAsyncIterable,
+  isErrnoException,
   isRecord,
   isToolOutput,
   normalizeStopReason,

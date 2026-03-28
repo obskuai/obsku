@@ -40,6 +40,13 @@ function isToolBindingWithMiddleware(tool: unknown): tool is ToolBindingShape {
   );
 }
 
+function validateUniqueName(seen: Set<string>, name: string): void {
+  if (seen.has(name)) {
+    throw new Error(`Duplicate tool name: ${name}`);
+  }
+  seen.add(name);
+}
+
 export function setupPlugins(def: AgentDef): SetupContext {
   const resolvedTools = new Map<string, ResolvedTool>();
   const toolDefs: Array<ToolDef> = [];
@@ -78,18 +85,12 @@ export function setupPlugins(def: AgentDef): SetupContext {
 
   for (const toolEntry of def.tools ?? []) {
     if (isInternalPlugin(toolEntry)) {
-      if (seenToolNames.has(toolEntry.name)) {
-        throw new Error(`Duplicate tool name: ${toolEntry.name}`);
-      }
-      seenToolNames.add(toolEntry.name);
+      validateUniqueName(seenToolNames, toolEntry.name);
       resolvedTools.set(toolEntry.name, { middleware: [], plugin: toolEntry });
       toolDefs.push(pluginDefToToolDef(toolEntry));
     } else if (isToolBindingWithMiddleware(toolEntry)) {
       const toolName = toolEntry.tool.name;
-      if (seenToolNames.has(toolName)) {
-        throw new Error(`Duplicate tool name: ${toolName}`);
-      }
-      seenToolNames.add(toolName);
+      validateUniqueName(seenToolNames, toolName);
       resolvedTools.set(toolName, {
         middleware: toolEntry.middleware,
         plugin: createPlugin(toolEntry.tool as Parameters<typeof createPlugin>[0]),
@@ -97,10 +98,7 @@ export function setupPlugins(def: AgentDef): SetupContext {
       toolDefs.push(pluginDefToToolDef(toolEntry.tool as Parameters<typeof pluginDefToToolDef>[0]));
     } else {
       const toolName = toolEntry.name;
-      if (seenToolNames.has(toolName)) {
-        throw new Error(`Duplicate tool name: ${toolName}`);
-      }
-      seenToolNames.add(toolName);
+      validateUniqueName(seenToolNames, toolName);
       resolvedTools.set(toolName, {
         middleware: [],
         plugin: createPlugin(toolEntry as Parameters<typeof createPlugin>[0]),

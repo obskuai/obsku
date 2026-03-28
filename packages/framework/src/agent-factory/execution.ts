@@ -82,12 +82,12 @@ export async function callRegisteredAgent(
 ): Promise<string> {
   const agentEntry = agents.get(name);
   if (!agentEntry) {
-    return JSON.stringify({ error: `Agent "${name}" not found` });
+    return createErrorResponse({ error: `Agent "${name}" not found` });
   }
 
   const prepared = prepareExecution(maxDepth);
   if (prepared.error) {
-    return JSON.stringify({ error: prepared.error });
+    return createErrorResponse({ error: prepared.error });
   }
 
   try {
@@ -95,7 +95,7 @@ export async function callRegisteredAgent(
       agent(agentEntry.def).run(task, agentEntry.provider)
     );
   } catch (error: unknown) {
-    return JSON.stringify({ error: getErrorMessage(error), cause: getErrorMessage(error) });
+    return createErrorResponse({ error: getErrorMessage(error), cause: getErrorMessage(error) });
   }
 }
 
@@ -109,7 +109,7 @@ export async function executeEphemeralAgent(input: {
 }): Promise<string> {
   const prepared = prepareExecution(input.maxDepth);
   if (prepared.error) {
-    return JSON.stringify({ error: prepared.error });
+    return createErrorResponse({ error: prepared.error });
   }
 
   const childTools = buildChildAgentTools({ ctx: input.ctx, tools: input.tools });
@@ -120,7 +120,7 @@ export async function executeEphemeralAgent(input: {
       agent(childDef).run(input.task, input.provider)
     );
   } catch (error: unknown) {
-    return JSON.stringify({ error: getErrorMessage(error), cause: getErrorMessage(error) });
+    return createErrorResponse({ error: getErrorMessage(error), cause: getErrorMessage(error) });
   }
 }
 
@@ -128,6 +128,10 @@ function prepareExecution(maxDepth: number): { currentDepth: number; error?: str
   const currentDepth = getCurrentDepth();
   const depthError = checkDepthLimit(currentDepth, maxDepth);
   return depthError ? { currentDepth, error: depthError } : { currentDepth };
+}
+
+function createErrorResponse(data: Record<string, string>): string {
+  return JSON.stringify(data);
 }
 
 function createDynamicCallToolDef(name: string): ToolDef {
