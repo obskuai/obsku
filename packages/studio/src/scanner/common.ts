@@ -77,28 +77,54 @@ export function findExportedObjects(
 ): ExportedObjectMatch[] {
   const matches: ExportedObjectMatch[] = [];
 
-  for (const [exportName, declarations] of sourceFile.getExportedDeclarations()) {
-    const seen = new Set<string>();
+  const seen = new Set<string>();
+  const pushMatch = (exportName: string, declaration: MorphNode): void => {
+    const objectLiteral = findObjectLiteralForDeclaration(declaration, matcher);
+    if (!objectLiteral) {
+      return;
+    }
 
-    for (const declaration of declarations) {
-      const objectLiteral = findObjectLiteralForDeclaration(declaration, matcher);
-      if (!objectLiteral) {
-        continue;
+    const key = `${exportName}:${objectLiteral.getStart()}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+
+    matches.push({
+      exportName,
+      filePath: sourceFile.getFilePath(),
+      line: objectLiteral.getStartLineNumber(),
+      modulePath: toModulePath(rootDir, sourceFile.getFilePath()),
+      objectLiteral,
+    });
+  };
+
+  for (const statement of sourceFile.getStatements()) {
+    if (Node.isVariableStatement(statement) && statement.isExported()) {
+      for (const declaration of statement.getDeclarations()) {
+        pushMatch(declaration.getName(), declaration);
       }
+      continue;
+    }
 
-      const key = `${exportName}:${objectLiteral.getStart()}`;
-      if (seen.has(key)) {
-        continue;
+    if (Node.isExportAssignment(statement)) {
+      pushMatch("default", statement);
+    }
+  }
+
+  for (const exportDeclaration of sourceFile.getExportDeclarations()) {
+    if (exportDeclaration.getModuleSpecifier() != null) {
+      continue;
+    }
+
+    const namedExports = exportDeclaration.getNamedExports();
+    for (const exportSpecifier of namedExports) {
+      const localName = exportSpecifier.getNameNode().getText();
+      const exportName = exportSpecifier.getAliasNode()?.getText() ?? localName;
+      const declaration = sourceFile.getVariableDeclaration(localName);
+      if (declaration) {
+        pushMatch(exportName, declaration);
       }
-      seen.add(key);
-
-      matches.push({
-        exportName,
-        filePath: sourceFile.getFilePath(),
-        line: objectLiteral.getStartLineNumber(),
-        modulePath: toModulePath(rootDir, sourceFile.getFilePath()),
-        objectLiteral,
-      });
     }
   }
 
@@ -254,15 +280,6 @@ function findObjectLiteralForDeclaration(
   }
 
   return undefined;
-}
-
-function looksLikeTypedDeclaration(declaration: MorphNode, typeName: string): boolean {
-  if (!Node.isVariableDeclaration(declaration)) {
-    return false;
-  }
-
-  const typeNode = declaration.getTypeNode();
-  return Boolean(typeNode && typeNode.getText().includes(typeName));
 }
 
 export function unwrapExpression(expression: Expression): Expression {

@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Effect, Exit } from "effect";
-import { exec } from "../src/exec";
+import { createExec, exec } from "../src/exec";
 
 function mockSpawn(stdout: string, exitCode: number = 0, stderr: string = "") {
   const originalSpawn = Bun.spawn;
@@ -87,9 +87,12 @@ describe("exec tool", () => {
   });
 
   test("basic command execution (echo)", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("hello world\n");
     try {
-      const exit = await runEffect(exec.execute({ args: ["hello", "world"], command: "echo" }));
+      const exit = await runEffect(
+        execPlugin.execute({ args: ["hello", "world"], command: "echo" })
+      );
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as {
         exitCode: number;
@@ -109,9 +112,10 @@ describe("exec tool", () => {
   });
 
   test("stdout/stderr separation", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { restore } = mockSpawn("out data", 0, "err data");
     try {
-      const exit = await runEffect(exec.execute({ args: [], command: "myCmd" }));
+      const exit = await runEffect(execPlugin.execute({ args: [], command: "myCmd" }));
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as {
         exitCode: number;
@@ -127,9 +131,10 @@ describe("exec tool", () => {
   });
 
   test("exit code capture - success", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { restore } = mockSpawn("", 0);
     try {
-      const exit = await runEffect(exec.execute({ command: "true" }));
+      const exit = await runEffect(execPlugin.execute({ command: "true" }));
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number };
       expect(result.exitCode).toBe(0);
@@ -139,9 +144,10 @@ describe("exec tool", () => {
   });
 
   test("exit code capture - failure", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { restore } = mockSpawn("", 1, "command failed");
     try {
-      const exit = await runEffect(exec.execute({ command: "false" }));
+      const exit = await runEffect(execPlugin.execute({ command: "false" }));
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number; stderr: string };
       expect(result.exitCode).toBe(1);
@@ -152,9 +158,12 @@ describe("exec tool", () => {
   });
 
   test("timeout enforcement", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { restore } = mockSpawnTimeout();
     try {
-      const exit = await runEffect(exec.execute({ args: ["100"], command: "sleep", timeout: 100 }));
+      const exit = await runEffect(
+        execPlugin.execute({ args: ["100"], command: "sleep", timeout: 100 })
+      );
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
 
       expect(wrappedResult.isError).toBe(true);
@@ -168,9 +177,10 @@ describe("exec tool", () => {
   });
 
   test("cwd option", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("/tmp\n");
     try {
-      const exit = await runEffect(exec.execute({ command: "pwd", cwd: "/tmp" }));
+      const exit = await runEffect(execPlugin.execute({ command: "pwd", cwd: "/tmp" }));
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number; stdout: string };
 
@@ -184,10 +194,11 @@ describe("exec tool", () => {
   });
 
   test("env option", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("bar\n");
     try {
       const exit = await runEffect(
-        exec.execute({ args: ["FOO"], command: "printenv", env: { FOO: "bar" } })
+        execPlugin.execute({ args: ["FOO"], command: "printenv", env: { FOO: "bar" } })
       );
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number };
@@ -203,9 +214,12 @@ describe("exec tool", () => {
   });
 
   test("shell mode - passes command to /bin/sh -c", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("hello\n");
     try {
-      const exit = await runEffect(exec.execute({ command: "echo hello | cat", shell: true }));
+      const exit = await runEffect(
+        execPlugin.execute({ command: "echo hello | cat", shell: true })
+      );
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number; stdout: string };
 
@@ -221,9 +235,10 @@ describe("exec tool", () => {
   });
 
   test("direct mode - passes command and args separately", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("output");
     try {
-      const exit = await runEffect(exec.execute({ args: ["-la", "/tmp"], command: "ls" }));
+      const exit = await runEffect(execPlugin.execute({ args: ["-la", "/tmp"], command: "ls" }));
       const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
       const result = JSON.parse(wrappedResult.result) as { exitCode: number };
 
@@ -239,9 +254,10 @@ describe("exec tool", () => {
   });
 
   test("command sanitization - control chars removed", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("");
     try {
-      const exit = await runEffect(exec.execute({ command: "echo\u0000\u0001\u007fhello" }));
+      const exit = await runEffect(execPlugin.execute({ command: "echo\u0000\u0001\u007fhello" }));
       extractSuccess(exit);
 
       const spawnCall = mockFn.mock.calls[0];
@@ -253,9 +269,10 @@ describe("exec tool", () => {
   });
 
   test("default timeout is 30000ms", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("");
     try {
-      await runEffect(exec.execute({ command: "test" }));
+      await runEffect(execPlugin.execute({ command: "test" }));
 
       const spawnCall = mockFn.mock.calls[0];
       const spawnOpts = spawnCall[1] as { signal?: AbortSignal };
@@ -266,9 +283,10 @@ describe("exec tool", () => {
   });
 
   test("shell defaults to false", async () => {
+    const execPlugin = createExec({ backend: "local" });
     const { mockFn, restore } = mockSpawn("");
     try {
-      await runEffect(exec.execute({ args: ["arg1"], command: "mycommand" }));
+      await runEffect(execPlugin.execute({ args: ["arg1"], command: "mycommand" }));
 
       const spawnCall = mockFn.mock.calls[0];
       const spawnArgs = spawnCall[0] as Array<string>;

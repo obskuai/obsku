@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Effect, Exit } from "effect";
-import { exec } from "../src/exec";
+import { createExec, exec } from "../src/exec";
 
 function mockSpawnTimeout() {
   const originalSpawn = Bun.spawn;
@@ -82,10 +82,11 @@ interface PluginExecutionResult {
 describe("exec ToolOutput migration", () => {
   describe("timeout handling", () => {
     test("timeout returns result with isError:true in PluginExecutionResult", async () => {
+      const execPlugin = createExec({ backend: "local" });
       const { restore } = mockSpawnTimeout();
       try {
         const exit = await runEffect(
-          exec.execute({ args: ["100"], command: "sleep", timeout: 100 })
+          execPlugin.execute({ args: ["100"], command: "sleep", timeout: 100 })
         );
         const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
 
@@ -103,9 +104,10 @@ describe("exec ToolOutput migration", () => {
 
   describe("non-zero exit code", () => {
     test("non-zero exit should NOT have isError in PluginExecutionResult", async () => {
+      const execPlugin = createExec({ backend: "local" });
       const { restore } = mockSpawn("", 1, "command failed");
       try {
-        const exit = await runEffect(exec.execute({ command: "false" }));
+        const exit = await runEffect(execPlugin.execute({ command: "false" }));
         const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
 
         expect(wrappedResult.isError).toBe(false);
@@ -121,9 +123,12 @@ describe("exec ToolOutput migration", () => {
 
   describe("successful execution", () => {
     test("success should NOT have isError in PluginExecutionResult", async () => {
+      const execPlugin = createExec({ backend: "local" });
       const { restore } = mockSpawn("hello world\n");
       try {
-        const exit = await runEffect(exec.execute({ args: ["hello", "world"], command: "echo" }));
+        const exit = await runEffect(
+          execPlugin.execute({ args: ["hello", "world"], command: "echo" })
+        );
         const wrappedResult = extractSuccess(exit) as PluginExecutionResult;
 
         expect(wrappedResult.isError).toBe(false);
