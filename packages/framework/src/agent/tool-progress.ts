@@ -47,9 +47,9 @@ export function createProgressEmitter(
     void Effect.runPromise(emit(progressEvent)).catch((err) => {
       try {
         logProgressEmitError(tc, err);
-      } catch {
+      } catch (logErr) {
         try {
-          process.stderr.write("tool_progress: logging failed\\n");
+          process.stderr.write(`tool_progress: logging failed: ${getErrorMessage(logErr)}\n`);
         } catch {
           /* last resort */
         }

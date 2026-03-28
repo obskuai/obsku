@@ -15,7 +15,12 @@ interface PackageJson {
 function getPackageJson(): PackageJson {
   const pkgPath = join(__dirname, "..", "package.json");
   const content = readFileSync(pkgPath, "utf-8");
-  return JSON.parse(content) as PackageJson;
+  try {
+    return JSON.parse(content) as PackageJson;
+  } catch (error) {
+    console.error("Error: Failed to parse package.json");
+    process.exit(1);
+  }
 }
 
 function showVersion(): void {

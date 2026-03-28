@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getErrorMessage } from "../error-utils";
+import { safeJsonParse } from "../json-utils";
 
 export class VectorDimensionError extends Error {
   readonly _tag = "VectorDimensionError" as const;
@@ -94,15 +95,21 @@ export function deserializeEmbedding(
   try {
     // If it's already a string, parse it directly
     if (typeof embedding === "string") {
-      const parsed = JSON.parse(embedding);
-      return z.array(z.number()).parse(parsed);
+      const parseResult = safeJsonParse(embedding);
+      if (!parseResult.success) {
+        throw new SyntaxError(parseResult.error);
+      }
+      return z.array(z.number()).parse(parseResult.data);
     }
 
     // If it's a Uint8Array or Buffer, decode it first
     const textDecoder = new TextDecoder("utf-8");
     const jsonString = textDecoder.decode(embedding);
-    const parsed = JSON.parse(jsonString);
-    return z.array(z.number()).parse(parsed);
+    const parseResult = safeJsonParse(jsonString);
+    if (!parseResult.success) {
+      throw new SyntaxError(parseResult.error);
+    }
+    return z.array(z.number()).parse(parseResult.data);
   } catch (error: unknown) {
     const reason =
       isSyntaxError(error) && isErrorWithMessage(error)

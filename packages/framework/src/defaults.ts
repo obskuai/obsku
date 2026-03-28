@@ -119,6 +119,14 @@ export const DEFAULTS = {
     sseContentType: "text/event-stream",
   },
 
+  /** Agent defaults */
+  agent: {
+    /** Poll delay for async cleanup (100ms) */
+    pollDelayMs: 100,
+    /** Microtask yield delay for cleanup (0ms) */
+    microtaskYieldMs: 0,
+  },
+
   /** Agent factory defaults */
   agentFactory: {
     /** Maximum iterations for dynamically created sub-agents (10) */

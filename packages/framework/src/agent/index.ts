@@ -93,7 +93,7 @@ function startOnEventForwarder(
   return async () => {
     await Promise.race([
       Promise.allSettled([iterator.return?.(), task.catch(() => undefined)]),
-      new Promise((resolve) => setTimeout(resolve, 100)),
+      new Promise((resolve) => setTimeout(resolve, DEFAULTS.agent.pollDelayMs)),
     ]);
   };
 }
@@ -215,7 +215,7 @@ async function executeAgentProgram(
     return await Effect.runPromise(execution);
   } finally {
     if (stopForwarder) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, DEFAULTS.agent.microtaskYieldMs));
     }
     await stopForwarder?.();
     if (ownsSessionBus) {

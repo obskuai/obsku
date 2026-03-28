@@ -302,7 +302,13 @@ export async function writeRunIndex(
   let index: RunIndex = { runs: [] };
   try {
     const raw = await readFile(path, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw) as unknown;
+    } catch {
+      // Invalid JSON — start fresh.
+      parsed = null;
+    }
     if (
       typeof parsed === "object" &&
       parsed !== null &&

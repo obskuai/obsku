@@ -1,3 +1,4 @@
+import { safeJsonParse } from "../json-utils";
 import { isRecord } from "../utils/type-guards";
 import { CheckpointCorruptionError } from "./errors";
 import type { Serializer } from "./types";
@@ -76,8 +77,12 @@ export class JsonPlusSerializer implements Serializer {
   }
 
   deserialize(data: string): unknown {
+    const parseResult = safeJsonParse(data);
+    if (!parseResult.success) {
+      throw new CheckpointCorruptionError(data, new Error(parseResult.error));
+    }
     try {
-      return this.deserializeValue(JSON.parse(data));
+      return this.deserializeValue(parseResult.data);
     } catch (error: unknown) {
       throw new CheckpointCorruptionError(data, error);
     }

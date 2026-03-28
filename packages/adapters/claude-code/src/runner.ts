@@ -71,6 +71,7 @@ export async function runPreflight(binary?: string): Promise<void> {
       throw error;
     }
     // Unexpected spawn error (sandbox, permission denied, etc.)
+    process.stderr.write(`claude-code preflight error: ${error instanceof Error ? error.message : String(error)}\n`);
     throw new ClaudeNotFoundError();
   } finally {
     clearTimeout(timerId);
@@ -200,7 +201,8 @@ function parseClaudeEnvelope(
   let envelope: ClaudeJsonEnvelope;
   try {
     envelope = JSON.parse(raw) as ClaudeJsonEnvelope;
-  } catch {
+  } catch (parseErr) {
+    process.stderr.write(`claude-code parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}\n`);
     throw new ClaudeMalformedOutputError("stdout is not valid JSON");
   }
 
@@ -230,7 +232,8 @@ function parseClaudeEnvelope(
     }
     try {
       return JSON.parse(result) as Record<string, unknown>;
-    } catch {
+    } catch (parseErr) {
+      process.stderr.write(`claude-code parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}\n`);
       throw new ClaudeMalformedOutputError("json mode: 'result' field is not valid JSON");
     }
   }

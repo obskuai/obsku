@@ -95,7 +95,7 @@ export class EventBridge {
     let events = buffer.map((se) => se.displayInfo);
 
     if (filters.eventTypes?.length) {
-      events = events.filter((e) => filters.eventTypes!.includes(e.type as AgentEventType));
+      events = events.filter((e) => (filters.eventTypes ?? []).includes(e.type as AgentEventType));
     }
 
     if (filters.startTime !== undefined) {

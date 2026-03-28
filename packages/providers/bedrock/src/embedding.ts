@@ -83,9 +83,14 @@ export class BedrockEmbedding implements EmbeddingProvider {
 
     try {
       const response = await this.client.send(command);
-      const responseBody = BedrockEmbeddingResponse.parse(
-        JSON.parse(new TextDecoder().decode(response.body))
-      );
+      const decodedBody = new TextDecoder().decode(response.body);
+      let parsedBody: unknown;
+      try {
+        parsedBody = JSON.parse(decodedBody);
+      } catch (parseError) {
+        throw new BedrockEmbeddingError("unknown", "Failed to parse embedding response", parseError);
+      }
+      const responseBody = BedrockEmbeddingResponse.parse(parsedBody);
 
       return responseBody.embedding;
     } catch (error: unknown) {
